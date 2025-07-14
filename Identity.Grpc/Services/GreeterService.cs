@@ -1,13 +1,13 @@
+using System.Threading.Tasks;
 using Grpc.Core;
-using Identity.Grpc;
+using Microsoft.Extensions.Logging;
 
 namespace Identity.Grpc.Services;
 
 public class GreeterService : Greeter.GreeterBase
 {
     private readonly ILogger<GreeterService> _logger;
-    public GreeterService(ILogger<GreeterService> logger)
-    {
+    public GreeterService(ILogger<GreeterService> logger) {
         _logger = logger;
     }
 
