@@ -1,11 +1,21 @@
 using System;
 using System.Linq;
+using Identity.Domain;
+using Identity.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using Orleans.Hosting;
 
 internal class Program {
     private static void Main(string[] args) {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+        // Add Orleans hosting
+        _ = builder.Host.UseOrleans(silo => silo.UseLocalhostClustering());
+
+        // Register Domain and Infrastructure services for DI
+        _ = builder.Services.AddDomainServices();         // Extension method for Identity.Domain
+        _ = builder.Services.AddInfrastructureServices(); // Extension method for Identity.Infrastructure
 
         WebApplication app = builder.Build();
 
