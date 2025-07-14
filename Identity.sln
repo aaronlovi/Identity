@@ -15,6 +15,27 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Grpc", "Identity.G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Infrastructure", "Identity.Infrastructure\Identity.Infrastructure.csproj", "{0F8C44AB-C68A-4E86-A747-60DF8244226C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{54E16A94-0BFA-42E1-A479-519D9AAB7D4C}"
+	ProjectSection(SolutionItems) = preProject
+		docs\Identity Context.md = docs\Identity Context.md
+		docs\Roadmap.md = docs\Roadmap.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity Context", "Identity Context", "{0728F790-00E3-4911-B770-DDF9D981A59D}"
+	ProjectSection(SolutionItems) = preProject
+		docs\Identity Context\Identity Context Design.md = docs\Identity Context\Identity Context Design.md
+		docs\Identity Context\Identity Context Implementation Plan.md = docs\Identity Context\Identity Context Implementation Plan.md
+		docs\Identity Context\Identity Context Requirements.md = docs\Identity Context\Identity Context Requirements.md
+		docs\Identity Context\Mail configuration (SPF_DKIM_DMARC).md = docs\Identity Context\Mail configuration (SPF_DKIM_DMARC).md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,5 +121,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{54E16A94-0BFA-42E1-A479-519D9AAB7D4C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{0728F790-00E3-4911-B770-DDF9D981A59D} = {54E16A94-0BFA-42E1-A479-519D9AAB7D4C}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6DA92681-82AE-4BCB-A93D-81082B867CBA}
 	EndGlobalSection
 EndGlobal
