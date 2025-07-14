@@ -1,4 +1,4 @@
-`
+
 [Games Platform](..\..\..\Games%20Platform.md) > [2025-06](..\..\2025-06.md) > [Identity Context](..\Identity%20Context.md)
 
 # Identity Context Implementation Plan
@@ -83,6 +83,7 @@ Sessions & rate-limit counters are hosted in dedicated Orleans grains (`SessionG
    ```c#
    app.MapPost("/v1/auth/login", (LoginDto dto, IAUthService svc) => ...);
    ```
+
 2. Return RFC 7807 error objects via `ProblemDetails` middleware
 3. Use `[EnableRateLimiting(“auth”)]` policy backed by an Orleans rate-limit grain
 
@@ -154,13 +155,6 @@ Sessions & rate-limit counters are hosted in dedicated Orleans grains (`SessionG
 | **SETUP-03** | Wire up Orleans host in `Program.cs`: `builder.Host.UseOrleans(silo => silo.UseLocalhostClustering());` + DI registrations for Domain & Infrastructure.                             |              0.5  |
 | **SETUP-04** | Write multi-stage `Dockerfile` (`sdk:8.0` build → `aspnet:8.0` runtime) plus `.dockerignore`; verify `docker build .` succeeds.                                                     |              0.75 |
 | **SETUP-05** | GitHub Actions workflow: restore, build, unit-test, `docker build` & push to `ghcr.io/…/identity-api:sha`.                                                                          |              0.5  |
-
-|  **ID**    |  **Description**                   |    **Est (h)**  |
-|:-----------|:-----------------------------------|----------------:|
-| SETUP-01   | `dotnet new sln` + add projects    |            0.25 |
-| SETUP-02   | Baseline Orleans host boiler-plate |            0.5  |
-| SETUP-03   | Dockerfile multi-stage             |            0.75 |
-| SETUP-04   | GitHub CI YAML workflow            |            0.5  |
 
 ## 10.2. Initial task list - Data layer & migrations
 

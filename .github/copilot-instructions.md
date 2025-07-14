@@ -86,4 +86,7 @@ All identity changes flow through Kafka `identity.events` topic:
 - **Advanced Fraud**: ML-based detection patterns
 - **Horizontal Scaling**: Design for 10k+ concurrent users
 
+## Documentation Reference
+All actions must refer to the `/docs` folder, especially under the `/docs/Identity Context` folder, for design, requirements, and implementation notes. These documents are paramount for understanding the Identity microservice and should always be consulted before implementing any features or making architectural decisions.
+
 When implementing features, always consider the gaming context (shadow banning, play-money vs real-money readiness) and maintain event-driven patterns for downstream service integration.
