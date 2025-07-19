@@ -4,7 +4,7 @@ services:
 
   postgres:
     image: postgres:${POSTGRES_VERSION}
-    container_name: postgres
+    container_name: identity-db
     ports:
       - "5432:5432"
     environment:
@@ -19,7 +19,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_VERSION}
-    container_name: pgadmin
+    container_name: identity-pgadmin
     ports:
       - "5050:80"
     environment:
