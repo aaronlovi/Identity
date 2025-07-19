@@ -41,6 +41,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{DFC2
 		.github\copilot-instructions.md = .github\copilot-instructions.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{A3DDC613-39CD-4972-8ADA-8B9407A38E52}"
+	ProjectSection(SolutionItems) = preProject
+		.env = .env
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +137,7 @@ Global
 		{54E16A94-0BFA-42E1-A479-519D9AAB7D4C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{0728F790-00E3-4911-B770-DDF9D981A59D} = {54E16A94-0BFA-42E1-A479-519D9AAB7D4C}
 		{DFC29C97-55C6-475F-80F2-CBDE2D137252} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{A3DDC613-39CD-4972-8ADA-8B9407A38E52} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6DA92681-82AE-4BCB-A93D-81082B867CBA}
