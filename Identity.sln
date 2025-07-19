@@ -43,8 +43,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{DFC2
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{A3DDC613-39CD-4972-8ADA-8B9407A38E52}"
 	ProjectSection(SolutionItems) = preProject
-		.env = .env
-		docker-compose.yml = docker-compose.yml
+		docker\.env = docker\.env
+		docker\docker-compose.yml = docker\docker-compose.yml
 	EndProjectSection
 EndProject
 Global
