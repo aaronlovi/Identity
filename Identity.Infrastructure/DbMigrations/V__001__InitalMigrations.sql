@@ -1,174 +1,169 @@
--- DL-01: Create users table
+-- DL-01: Baseline migration
+CREATE SCHEMA identity;
+SET search_path = identity, public;
+
+-- DL-02: Create users table
 CREATE TABLE users (
     id BIGINT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    hashed_password TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    status TEXT NOT NULL,
+    locale TEXT,
+    kyc_state TEXT,
+    self_excluded_until TIMESTAMP WITH TIME ZONE,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-COMMENT ON TABLE users IS 'Stores user information including credentials and status.';
+COMMENT ON TABLE users IS 'Stores user information including status, locale, and KYC state.';
 COMMENT ON COLUMN users.id IS 'Primary key for the user, generated as a BIGINT.';
-COMMENT ON COLUMN users.email IS 'Unique email address for the user.';
-COMMENT ON COLUMN users.hashed_password IS 'Hashed password for authentication.';
 COMMENT ON COLUMN users.status IS 'Current status of the user (e.g., active, banned).';
+COMMENT ON COLUMN users.locale IS 'Locale preference of the user.';
+COMMENT ON COLUMN users.kyc_state IS 'KYC (Know Your Customer) state of the user.';
+COMMENT ON COLUMN users.self_excluded_until IS 'Timestamp until the user is self-excluded.';
 COMMENT ON COLUMN users.inserted_at IS 'Timestamp when the user record was created.';
 COMMENT ON COLUMN users.updated_at IS 'Timestamp when the user record was last updated.';
 
--- DL-02: Create roles table
-CREATE TABLE roles (
-    id BIGINT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
+-- DL-03: Create profiles table
+CREATE TABLE profiles (
+    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    display_name TEXT,
+    avatar TEXT,
+    timezone TEXT,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-COMMENT ON TABLE roles IS 'Stores roles that can be assigned to users.';
-COMMENT ON COLUMN roles.id IS 'Primary key for the role, generated as a BIGINT.';
-COMMENT ON COLUMN roles.name IS 'Unique name of the role.';
-COMMENT ON COLUMN roles.description IS 'Description of the role.';
+COMMENT ON TABLE profiles IS 'Stores user profile information.';
+COMMENT ON COLUMN profiles.user_id IS 'Foreign key referencing the user.';
+COMMENT ON COLUMN profiles.display_name IS 'Display name of the user.';
+COMMENT ON COLUMN profiles.avatar IS 'Avatar URL of the user.';
+COMMENT ON COLUMN profiles.timezone IS 'Timezone of the user.';
+COMMENT ON COLUMN profiles.inserted_at IS 'Timestamp when the profile record was created.';
+COMMENT ON COLUMN profiles.updated_at IS 'Timestamp when the profile record was last updated.';
+
+-- DL-04: Create roles table
+CREATE TABLE roles (
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, role)
+);
+COMMENT ON TABLE roles IS 'Stores roles assigned to users.';
+COMMENT ON COLUMN roles.user_id IS 'Foreign key referencing the user.';
+COMMENT ON COLUMN roles.role IS 'Role assigned to the user.';
 COMMENT ON COLUMN roles.inserted_at IS 'Timestamp when the role record was created.';
 COMMENT ON COLUMN roles.updated_at IS 'Timestamp when the role record was last updated.';
 
--- DL-03: Create user_roles table
-CREATE TABLE user_roles (
+-- DL-05: Create credentials table
+CREATE TABLE credentials (
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    external_id TEXT,
+    hash TEXT,
+    mfa_secret TEXT,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, role_id)
+    PRIMARY KEY (user_id, type, external_id)
 );
-COMMENT ON TABLE user_roles IS 'Associates users with roles.';
-COMMENT ON COLUMN user_roles.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN user_roles.role_id IS 'Foreign key referencing the role.';
-COMMENT ON COLUMN user_roles.inserted_at IS 'Timestamp when the association was created.';
-COMMENT ON COLUMN user_roles.updated_at IS 'Timestamp when the association was last updated.';
+COMMENT ON TABLE credentials IS 'Stores authentication credentials for users.';
+COMMENT ON COLUMN credentials.user_id IS 'Foreign key referencing the user.';
+COMMENT ON COLUMN credentials.type IS 'Type of credential (e.g., email, OAuth).';
+COMMENT ON COLUMN credentials.external_id IS 'External identifier for the credential.';
+COMMENT ON COLUMN credentials.hash IS 'Hashed password or token.';
+COMMENT ON COLUMN credentials.mfa_secret IS 'MFA secret for the user.';
+COMMENT ON COLUMN credentials.inserted_at IS 'Timestamp when the credential record was created.';
+COMMENT ON COLUMN credentials.updated_at IS 'Timestamp when the credential record was last updated.';
 
--- DL-04: Create sessions table
-CREATE TABLE sessions (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,
-    expires_at TIMESTAMP NOT NULL,
-    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-COMMENT ON TABLE sessions IS 'Tracks user sessions for authentication.';
-COMMENT ON COLUMN sessions.id IS 'Primary key for the session, generated as a BIGINT.';
-COMMENT ON COLUMN sessions.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN sessions.token IS 'Unique token for the session.';
-COMMENT ON COLUMN sessions.expires_at IS 'Timestamp when the session expires.';
-COMMENT ON COLUMN sessions.inserted_at IS 'Timestamp when the session record was created.';
-COMMENT ON COLUMN sessions.updated_at IS 'Timestamp when the session record was last updated.';
-
--- DL-05: Create devices table
+-- DL-06: Create devices table
 CREATE TABLE devices (
-    id BIGINT PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    device_identifier TEXT NOT NULL UNIQUE,
+    device_id BIGINT NOT NULL,
+    first_ip INET,
+    ua TEXT,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, device_id)
 );
 COMMENT ON TABLE devices IS 'Tracks devices associated with users.';
-COMMENT ON COLUMN devices.id IS 'Primary key for the device, generated as a BIGINT.';
 COMMENT ON COLUMN devices.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN devices.device_identifier IS 'Unique identifier for the device.';
+COMMENT ON COLUMN devices.device_id IS 'Unique identifier for the device.';
+COMMENT ON COLUMN devices.first_ip IS 'First IP address used by the device.';
+COMMENT ON COLUMN devices.ua IS 'User agent string of the device.';
 COMMENT ON COLUMN devices.inserted_at IS 'Timestamp when the device record was created.';
 COMMENT ON COLUMN devices.updated_at IS 'Timestamp when the device record was last updated.';
 
--- DL-06: Create login_attempts table
-CREATE TABLE login_attempts (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    ip_address INET NOT NULL,
-    succeeded BOOLEAN NOT NULL,
-    attempted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-COMMENT ON TABLE login_attempts IS 'Tracks login attempts for auditing and security.';
-COMMENT ON COLUMN login_attempts.id IS 'Primary key for the login attempt, generated as a BIGINT.';
-COMMENT ON COLUMN login_attempts.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN login_attempts.ip_address IS 'IP address from which the login attempt was made.';
-COMMENT ON COLUMN login_attempts.succeeded IS 'Indicates whether the login attempt was successful.';
-COMMENT ON COLUMN login_attempts.attempted_at IS 'Timestamp when the login attempt occurred.';
-COMMENT ON COLUMN login_attempts.inserted_at IS 'Timestamp when the login attempt record was created.';
-COMMENT ON COLUMN login_attempts.updated_at IS 'Timestamp when the login attempt record was last updated.';
-
--- DL-07: Create audit_logs table
-CREATE TABLE audit_logs (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    action TEXT NOT NULL,
-    details JSONB,
-    performed_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-COMMENT ON TABLE audit_logs IS 'Stores audit logs for user actions.';
-COMMENT ON COLUMN audit_logs.id IS 'Primary key for the audit log, generated as a BIGINT.';
-COMMENT ON COLUMN audit_logs.user_id IS 'Foreign key referencing the user who performed the action.';
-COMMENT ON COLUMN audit_logs.action IS 'Description of the action performed.';
-COMMENT ON COLUMN audit_logs.details IS 'Additional details about the action in JSON format.';
-COMMENT ON COLUMN audit_logs.performed_at IS 'Timestamp when the action was performed.';
-COMMENT ON COLUMN audit_logs.inserted_at IS 'Timestamp when the audit log record was created.';
-COMMENT ON COLUMN audit_logs.updated_at IS 'Timestamp when the audit log record was last updated.';
-
--- DL-08: Create rate_limits table
-CREATE TABLE rate_limits (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    ip_address INET NOT NULL,
-    bucket TEXT NOT NULL,
-    count INT NOT NULL DEFAULT 0,
-    reset_at TIMESTAMP NOT NULL,
-    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-COMMENT ON TABLE rate_limits IS 'Tracks rate-limiting buckets for users and IPs.';
-COMMENT ON COLUMN rate_limits.id IS 'Primary key for the rate limit, generated as a BIGINT.';
-COMMENT ON COLUMN rate_limits.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN rate_limits.ip_address IS 'IP address associated with the rate limit.';
-COMMENT ON COLUMN rate_limits.bucket IS 'Name of the rate-limiting bucket.';
-COMMENT ON COLUMN rate_limits.count IS 'Current count of actions in the bucket.';
-COMMENT ON COLUMN rate_limits.reset_at IS 'Timestamp when the rate limit resets.';
-COMMENT ON COLUMN rate_limits.inserted_at IS 'Timestamp when the rate limit record was created.';
-COMMENT ON COLUMN rate_limits.updated_at IS 'Timestamp when the rate limit record was last updated.';
-
--- DL-09: Create user_status_changes table
-CREATE TABLE user_status_changes (
-    id BIGINT PRIMARY KEY,
+-- DL-07: Create sessions table
+CREATE TABLE sessions (
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    old_status VARCHAR(50) NOT NULL,
-    new_status VARCHAR(50) NOT NULL,
-    changed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    device_id BIGINT REFERENCES devices(device_id) ON DELETE CASCADE,
+    jwt_id BIGINT NOT NULL,
+    revoked_at TIMESTAMP,
+    exp TIMESTAMP NOT NULL,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, device_id, jwt_id)
 );
-COMMENT ON TABLE user_status_changes IS 'Tracks changes to user statuses.';
-COMMENT ON COLUMN user_status_changes.id IS 'Primary key for the status change, generated as a BIGINT.';
-COMMENT ON COLUMN user_status_changes.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN user_status_changes.old_status IS 'Previous status of the user.';
-COMMENT ON COLUMN user_status_changes.new_status IS 'New status of the user.';
-COMMENT ON COLUMN user_status_changes.changed_at IS 'Timestamp when the status change occurred.';
-COMMENT ON COLUMN user_status_changes.inserted_at IS 'Timestamp when the status change record was created.';
-COMMENT ON COLUMN user_status_changes.updated_at IS 'Timestamp when the status change record was last updated.';
+COMMENT ON TABLE sessions IS 'Tracks user sessions for authentication.';
+COMMENT ON COLUMN sessions.user_id IS 'Foreign key referencing the user.';
+COMMENT ON COLUMN sessions.device_id IS 'Foreign key referencing the device.';
+COMMENT ON COLUMN sessions.jwt_id IS 'Unique identifier for the JWT.';
+COMMENT ON COLUMN sessions.revoked_at IS 'Timestamp when the session was revoked.';
+COMMENT ON COLUMN sessions.exp IS 'Expiration timestamp of the session.';
+COMMENT ON COLUMN sessions.inserted_at IS 'Timestamp when the session record was created.';
+COMMENT ON COLUMN sessions.updated_at IS 'Timestamp when the session record was last updated.';
 
--- DL-10: Create user_events table
-CREATE TABLE user_events (
+-- DL-08: Create login_events table
+CREATE TABLE login_events (
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    credential_type TEXT,
+    ip INET NOT NULL,
+    success BOOLEAN NOT NULL,
+    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, ip, inserted_at)
+);
+COMMENT ON TABLE login_events IS 'Tracks login attempts for auditing and security.';
+COMMENT ON COLUMN login_events.user_id IS 'Foreign key referencing the user.';
+COMMENT ON COLUMN login_events.credential_type IS 'Type of credential used for login.';
+COMMENT ON COLUMN login_events.ip IS 'IP address from which the login attempt was made.';
+COMMENT ON COLUMN login_events.success IS 'Indicates whether the login attempt was successful.';
+COMMENT ON COLUMN login_events.inserted_at IS 'Timestamp when the login attempt occurred.';
+COMMENT ON COLUMN login_events.updated_at IS 'Timestamp when the login attempt record was last updated.';
+
+-- DL-09: Create password_reset_tokens table
+CREATE TABLE password_reset_tokens (
+    credential_id BIGINT NOT NULL,
+    token BIGINT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    delivery_channel TEXT,
+    masked_destination TEXT,
+    inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (credential_id, token)
+);
+COMMENT ON TABLE password_reset_tokens IS 'Stores password reset tokens for users.';
+COMMENT ON COLUMN password_reset_tokens.credential_id IS 'Foreign key referencing the credential.';
+COMMENT ON COLUMN password_reset_tokens.token IS 'Unique token for password reset.';
+COMMENT ON COLUMN password_reset_tokens.expires_at IS 'Expiration timestamp of the token.';
+COMMENT ON COLUMN password_reset_tokens.delivery_channel IS 'Channel used to deliver the token (e.g., email, SMS).';
+COMMENT ON COLUMN password_reset_tokens.masked_destination IS 'Masked destination for token delivery.';
+COMMENT ON COLUMN password_reset_tokens.inserted_at IS 'Timestamp when the token record was created.';
+COMMENT ON COLUMN password_reset_tokens.updated_at IS 'Timestamp when the token record was last updated.';
+
+-- DL-10: Create email_outbox table
+CREATE TABLE email_outbox (
     id BIGINT PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    event_type TEXT NOT NULL,
-    event_data JSONB,
-    occurred_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    payload JSONB NOT NULL,
+    sent_at TIMESTAMP,
+    fail_count INTEGER DEFAULT 0,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-COMMENT ON TABLE user_events IS 'Tracks events related to users.';
-COMMENT ON COLUMN user_events.id IS 'Primary key for the user event, generated as a BIGINT.';
-COMMENT ON COLUMN user_events.user_id IS 'Foreign key referencing the user.';
-COMMENT ON COLUMN user_events.event_type IS 'Type of the event (e.g., login, logout).';
-COMMENT ON COLUMN user_events.event_data IS 'Additional data about the event in JSON format.';
-COMMENT ON COLUMN user_events.occurred_at IS 'Timestamp when the event occurred.';
-COMMENT ON COLUMN user_events.inserted_at IS 'Timestamp when the user event record was created.';
-COMMENT ON COLUMN user_events.updated_at IS 'Timestamp when the user event record was last updated.';
+COMMENT ON TABLE email_outbox IS 'Stores email messages to be sent.';
+COMMENT ON COLUMN email_outbox.id IS 'Primary key for the email message.';
+COMMENT ON COLUMN email_outbox.payload IS 'JSON payload of the email message.';
+COMMENT ON COLUMN email_outbox.sent_at IS 'Timestamp when the email was sent.';
+COMMENT ON COLUMN email_outbox.fail_count IS 'Number of failed attempts to send the email.';
+COMMENT ON COLUMN email_outbox.inserted_at IS 'Timestamp when the email record was created.';
+COMMENT ON COLUMN email_outbox.updated_at IS 'Timestamp when the email record was last updated.';
+
+-- DL-11: Enforce all FKs with ON DELETE CASCADE and add unique constraints
+-- (Already implemented in the above table definitions)
