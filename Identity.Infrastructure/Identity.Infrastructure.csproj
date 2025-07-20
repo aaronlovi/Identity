@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <ItemGroup>
-      <None Remove="DbMigrations\V__001__InitalMigrations.sql" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="InnoAndLogic.Persistence" Version="1.0.5" />
-    </ItemGroup>
-    <ItemGroup>
-      <EmbeddedResource Include="DbMigrations\V__001__InitalMigrations.sql" />
-    </ItemGroup>
+  <ItemGroup>
+    <None Remove="Database\Migrations\V__001__InitalMigrations.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="InnoAndLogic.Persistence" Version="1.0.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Database\Migrations\V__001__InitalMigrations.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Database\Statements\" />
+  </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Identity.Api.Middleware;
 using Identity.Domain;
 using Identity.Infrastructure;
 using Microsoft.AspNetCore.Builder;
@@ -19,6 +20,10 @@ internal class Program {
                 AddInfrastructureServices(builder.Configuration); // Extension method for Identity.Infrastructure
 
         WebApplication app = builder.Build();
+
+        // Use development-only middleware
+        if (app.Environment.IsDevelopment())
+            _ = app.UseMiddleware<DevelopmentOnlyMiddleware>();
 
         _ = app.UseHttpsRedirection();
 
