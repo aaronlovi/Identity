@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Identity.Domain;
 using Identity.Infrastructure;
-using InnoAndLogic.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Orleans.Hosting;
@@ -16,13 +15,8 @@ internal class Program {
 
         // Register Domain and Infrastructure services for DI
         _ = builder.Services.
-                AddDomainServices().         // Extension method for Identity.Domain
-                AddInfrastructureServices(); // Extension method for Identity.Infrastructure
-        _ = DbmHostConfig.ConfigurePersistenceServices(
-                builder.Services, 
-                builder.Configuration,
-                "DbmOptions", 
-                null);
+                AddDomainServices(). // Extension method for Identity.Domain
+                AddInfrastructureServices(builder.Configuration); // Extension method for Identity.Infrastructure
 
         WebApplication app = builder.Build();
 
