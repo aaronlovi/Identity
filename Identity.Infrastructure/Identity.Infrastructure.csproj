@@ -11,4 +11,7 @@
   <ItemGroup>
     <Folder Include="Database\Statements\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Identity.Domain\Identity.Domain.csproj" />
+  </ItemGroup>
 </Project>

@@ -92,6 +92,46 @@ All identity changes flow through Kafka `identity.events` topic:
 
 ## Documentation Reference
 All actions must refer to the `/docs` folder, especially under the `/docs/Identity Context` folder, for design, requirements, and implementation notes. These documents are paramount for understanding the Identity microservice and must always be included in the context for any task or implementation.
-Do not use selective judgment here--just always include the documentation under `/docs/Identity Context` for context.
+
+**Important**: Always include the `/docs` folder in the context of any task or implementation. This ensures that all design, requirements, and implementation notes are adhered to. Do not skip or selectively omit this step.
 
 When implementing features, always consider the gaming context (shadow banning, play-money vs real-money readiness) and maintain event-driven patterns for downstream service integration.
+
+## Code Quality Instructions
+To maintain consistent and high-quality code, follow these conventions for class and record definitions:
+
+1. **Order of Members**:
+   - Constants at the top
+   - Private fields
+   - Private properties
+   - Constructors
+   - Public properties
+   - Public methods
+   - Private methods
+
+2. **Naming Conventions**:
+   - Use PascalCase for class, method, and property names.
+   - Use camelCase for private fields, prefixed with an underscore (e.g., `_exampleField`).
+
+3. **Documentation**:
+   - Add XML comments (`///`) for all public classes, methods, and properties.
+   - Include a summary, parameters, and return value descriptions where applicable.
+
+4. **Error Handling**:
+   - Constructors should throw exceptions for invalid inputs or unexpected conditions.
+   - For other methods, prefer using the `InnoAndLogic.Shared.Result` and `InnoAndLogic.Shared.Result<T>` types to represent success or failure states.
+   - The `InnoAndLogic.Shared` library is available on NuGet (https://www.nuget.org/packages/InnoAndLogic.Shared) and its source code can be found at https://github.com/aaronlovi/InnoAndLogic/tree/master/InnoAndLogic.Shared.
+
+5. **Immutability**:
+   - Prefer immutability for value objects (e.g., use `record` types).
+
+6. **Enumerations**:
+   - Enumerations should generally have as their first member an `Invalid = 0` item to represent an uninitialized or invalid state.
+
+7. **Unit Tests**:
+   - Write unit tests for all public methods and ensure 100% coverage for critical business logic.
+
+8. **Documentation Adherence**:
+   - Always include the `/docs` folder in the context of any task or implementation. This ensures that all design, requirements, and implementation notes are adhered to. Do not skip or selectively omit this step.
+
+By adhering to these guidelines, we ensure maintainable, readable, and robust code across the project.
