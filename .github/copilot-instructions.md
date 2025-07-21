@@ -20,7 +20,8 @@ src/
 ├── Identity.GrainInterfaces/ # Orleans grain contracts
 ├── Identity.Grains/       # Orleans grain implementations
 ├── Identity.Grpc/         # gRPC service definitions and implementations
-└── Identity.Infrastructure/ # Kafka, email, outbox, persistence
+├── Identity.Infrastructure/ # Kafka, email, outbox, persistence
+└── Identity.Benchmarks/   # Benchmarking project for tuning Argon2 parameters
 ```
 
 ## Key Domain Concepts
@@ -30,6 +31,7 @@ src/
 - **Devices**: Logical app installations, enables device-specific rate limiting
 - **User Status**: Active, Banned, Shadow-banned (gaming-specific behavior)
 - **Rate-limit Buckets**: In-memory counters keyed by user/device/IP
+- **Argon2 Tuning**: Password hashing parameters (`Iterations`, `MemoryCost`) are benchmarked and tuned using the `Identity.Benchmarks` project.
 
 ## Critical Workflows
 
@@ -65,6 +67,7 @@ All identity changes flow through Kafka `identity.events` topic:
 
 ## Security & Compliance
 - **Password Hashing**: Use industry-standard algorithms (bcrypt/Argon2)
+  - Argon2 parameters (`Iterations`, `MemoryCost`) are benchmarked and tuned using the `Identity.Benchmarks` project.
 - **JWT Security**: Include `jwt_id` for revocation, validate against session state
 - **Rate Limiting**: Implement before any authentication logic
 - **Email Security**: Use outbox pattern, configure SPF/DKIM/DMARC (see mail config docs)
@@ -79,6 +82,7 @@ All identity changes flow through Kafka `identity.events` topic:
 - **Orleans Patterns**: Use grains for stateful operations (sessions, rate limits)
 - **Event Sourcing**: Consider for audit requirements and future real-money compliance
 - **Container Ready**: Docker support planned for deployment topology
+- **Benchmarking**: Run the `Identity.Benchmarks` project to tune Argon2 parameters and update `appsettings.json` accordingly.
 
 ## Future Considerations
 - **KYC Integration**: Hook points for real-money compliance
@@ -87,6 +91,7 @@ All identity changes flow through Kafka `identity.events` topic:
 - **Horizontal Scaling**: Design for 10k+ concurrent users
 
 ## Documentation Reference
-All actions must refer to the `/docs` folder, especially under the `/docs/Identity Context` folder, for design, requirements, and implementation notes. These documents are paramount for understanding the Identity microservice and should always be consulted before implementing any features or making architectural decisions.
+All actions must refer to the `/docs` folder, especially under the `/docs/Identity Context` folder, for design, requirements, and implementation notes. These documents are paramount for understanding the Identity microservice and must always be included in the context for any task or implementation.
+Do not use selective judgment here--just always include the documentation under `/docs/Identity Context` for context.
 
 When implementing features, always consider the gaming context (shadow banning, play-money vs real-money readiness) and maintain event-driven patterns for downstream service integration.
