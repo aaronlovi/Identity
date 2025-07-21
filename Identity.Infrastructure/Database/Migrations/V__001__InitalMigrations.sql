@@ -6,16 +6,14 @@ SET search_path = identity, public;
 CREATE TABLE users (
     id BIGINT PRIMARY KEY,
     status TEXT NOT NULL,
-    locale TEXT,
     kyc_state TEXT,
     self_excluded_until TIMESTAMP WITH TIME ZONE,
     inserted_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-COMMENT ON TABLE users IS 'Stores user information including status, locale, and KYC state.';
+COMMENT ON TABLE users IS 'Stores user information including status and KYC state.';
 COMMENT ON COLUMN users.id IS 'Primary key for the user, generated as a BIGINT.';
 COMMENT ON COLUMN users.status IS 'Current status of the user (e.g., active, banned).';
-COMMENT ON COLUMN users.locale IS 'Locale preference of the user.';
 COMMENT ON COLUMN users.kyc_state IS 'KYC (Know Your Customer) state of the user.';
 COMMENT ON COLUMN users.self_excluded_until IS 'Timestamp until the user is self-excluded.';
 COMMENT ON COLUMN users.inserted_at IS 'Timestamp when the user record was created.';
