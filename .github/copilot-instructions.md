@@ -35,6 +35,26 @@ docs/
 └── [existing docs]/
 ```
 
+## Existing Documentation Reference
+
+### Use the comprehensive project documentation:
+- **`docs/Identity Context.md`** - High-level overview and public API specification
+- **`docs/Roadmap.md`** - Project roadmap and implementation priorities
+- **`docs/Identity Context/`** - Detailed design documents:
+  - `Identity Context Design.md` - Complete system architecture, data models, and component interactions
+  - `Identity Context Requirements.md` - Functional and non-functional requirements
+  - `Identity Context Glossary.md` - Domain terminology and definitions
+  - `Identity Context Implementation Plan.md` - Step-by-step development plan with time estimates
+- **`docs/adrs/`** - Architecture Decision Records for historical context
+
+### When generating code or making recommendations:
+1. **Always reference these documents first** to understand the complete context
+2. **Follow the established patterns** described in the design documents
+3. **Respect the requirements** outlined in the requirements document
+4. **Use consistent terminology** from the glossary
+5. **Consider the implementation plan** for prioritization and dependencies
+6. **Review existing ADRs** to understand previous architectural decisions
+
 ## Key Architectural Principles
 
 ### Authentication & Authorization
