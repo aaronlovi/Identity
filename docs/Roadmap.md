@@ -5,7 +5,6 @@
 
 # Contents
 
-- [Contents](#contents)
 - [1. Core service boundaries & data model](#key-1-core-service-boundaries-data-model)
 - [2. Wallet and ledger first](#key-2-wallet-and-ledger-first)
 - [3. Identity & auth](#key-3-identity-auth)
@@ -21,10 +20,10 @@
 
 |  Bounded context    |  Key data                      |  Persistence now                                       |  Adds later (real-money)        |
 |:--------------------|:-------------------------------|:-------------------------------------------------------|:--------------------------------|
-| **Identity**        | User, LoginCredential, Profile | PostgreSQL table(s)                                    | KYC docs, risk flags            |
-| **Wallet**          | Account, Balance, TxEntry      | Postgres *double-entry* tables (`accounts`, `entries`) | FX tables, AML flags            |
-| **Game-Session**    | Session, Bet, Outcome          | Event table or Kafka topic; snapshot in Postgres       | Game-state archiving for audits |
-| **AdminUI**         | Settings, FeatureFlags         | Postgres                                               | Role-based ACL                  |
+| **Identity**        | User, LoginCredential, Profile | Database table(s)                                      | KYC docs, risk flags            |
+| **Wallet**          | Account, Balance, TxEntry      | Database *double-entry* tables (`accounts`, `entries`) | FX tables, AML flags            |
+| **Game-Session**    | Session, Bet, Outcome          | Event table or Pub-sub topic; snapshot in database     | Game-state archiving for audits |
+| **AdminUI**         | Settings, FeatureFlags         | Database                                               | Role-based ACL                  |
 
 *Design artefact*: a context map + ER diagram.  
 *Why now*: locks in stable IDs (`user_id`, `account_id`, `session_id`) that every other piece plugs into.
@@ -33,66 +32,55 @@
 
 - Implement a **double-entry** schema (credit/debit rows).
 - Separate “**coin**” (play-money) from “**cash**” currency codes *now* → swapping in PSP rows later is trivial.
-- Expose a single idempotent gRPC endpoint:
-
-  `PostTransaction(request) => {success, new_balance}`
-- Store every post in Postgres plus stream to a Kafka topic `wallet.entries` for later analytics.
+- Expose a single idempotent endpoint: `PostTransaction(request) => {success, new_balance}`
+- Store every post in database plus stream to an event-stream topic `wallet.entries` for later analytics.
 
 # 3. Identity & auth
 
-- Phoenix + Pow (or your favourite) for email / social login.
-- Generate short-lived **access tokens** (JWT with `user_id`, `device_id`) for WebSocket auth.
-- Phoenix.Token or Plug attack for **rate-limiting** by `user_id` + `ip` (ETS counter) → blocks client scripts in play-money mode.
+- Use an OAuth 2.0/OIDC provider for email and social login
+- **Delegate all credential flows to Firebase Auth** (Email + Password, Google, Apple, X, etc.)
+- Down-stream services verify Firebase **ID-tokens locally via Admin SDK** (stateless)
+- Store `firebase_uid → user_id` mapping and **custom claims** (`roles[]`, `status`) in Postgres (≤ 1 KB)
+- Local cache-based rate-limit remains, but **only on your own APIs**
+- MVP uses **one Firebase project**; split into separate tenants later if custom-claim bloat approaches the 1 KB limit
 
 # 4. Game adaptor contract
 
-Create an Erlang **behaviour** (or protobuf service) that every game server must implement:
+Define a service contract (e.g., Protocol Buffers / gRPC or JSON-RPC) with operations:
 
-`@callback init_session(user_id, game_id, opts) :: {:ok, session_id}`  
-`@callback place_bet(session_id, wager, meta) :: {:ok, tx_ref}`  
-`@callback settle(session_id, outcome) :: {:ok, result_map}`
+`InitSession(user_id, game_id, opts) -> session_id`  
+`PlaceBet(session_id, wager, meta) -> transaction_ref`  
+`Settle(session_id, outcome) -> results`
 
-- Slots & poker back-ends live in their own OTP apps; they talk to Wallet via gRPC or internal messages.
-- This lets you swap a Java-based slot engine tomorrow without touching Identity or Wallet.
+- Any game engine that implements the contract can plug into Wallet via the chosen RPC transport
 
 # 5. Real-time infrastructure
 
-- **PubSub**: Phoenix.PubSub cluster for lobby chat, table lists, and jackpot broadcasts.
-- **Broadway**: use it to consume Kafka topics such as `wallet.entries` for leaderboards.  
-  *For jackpots*: aggregate every 3 s; push the number out to subscribed clients.  
-  *For leaderboards*: update top-N cache every 30–60 s (good UX, light DB load).
+- Publish/Subscribe layer for lobby chat, table lists, jackpot broadcasts (e.g., Redis Streams, NATS, or a managed pub-sub service).
+- Stream-processing pipeline that consumes `wallet.entries` to build leaderboards and jackpot tallies. Runs every 3-60 s depending on freshness requirements
+- Evaluate **Orleans Streams** for purely in-cluster fan-out (chat, table lists) and compare Cloud Pub/Sub cost & latency; park decision in an ADR.
 
 # 6. Supervisors & disaster recovery
 
-- Every stateful process (e.g., a live poker table) is a **GenServer** under a `DynamicSupervisor`.
-- Persist *all* state changes as events (`table.events` Kafka topic) → on crash, replay to restore; on scale-out, a second node can take over.
-- Run Postgres in HA (Patroni or CloudSQL) and enable WAL archiving; losing a node ≠ losing balances.
+- Each live table/match is an **Orleans grain**;
+
+  - Events persisted to `table.events`.
+  - On failure, replay events to a new instance; on scale-out, another node can assume the workload
 
 # 7. Admin UI Skeleton
 
-Phoenix LiveView:
+Real-time web admin dashboard (any SPA + server push):
 
-- Users & balances list with Free-text search.
+- Searchable user and balances list
 - Toggle feature flags (e.g., enable “auto-spin”).
-- Real-time stream of the last 100 ledger posts (helps you QA bet flows).
+- Real-time stream of the last *N* ledger posts (helps you QA bet flows).
 
 # 8. Deployment topology (10k CCU target)
 
-┌──────────┐ gRPC ┌──────────┐  
-│ Games │◀─────▶│ Wallet │  
-│(OTP apps)│ │ API │  
-└────┬─────┘ └────┬────┘  
- │ WS/Phoenix │ SQL  
-┌────▼─────┐ ┌───▼────┐  
-│ Ingress │ ↔ clients │ Postgres │  
-└──────────┘ └────────┘  
- ↕ Kafka (events) ↕  
-┌─────────────┐ ┌──────────┐  
-│ Leaderboard │ │ AdminLive │  
-└─────────────┘ └──────────┘
-
-- One BEAM node handles ~50 k lightweight processes; two nodes behind Nginx/Envoy cover 10 k users easily.
-- Kafka + Postgres give horizontal analytics potential without touching the game loop.
+- Scale horizontally by adding instances behind the gateway.
+- Message broker + relational database give horizontal analytics potential without touching the game loop.
+- **Start on Cloud Run** (cheapest path to production); add a *decision checkpoint* to evaluate GKE once load-testing approaches 10 k CCU
+- Orleans clustering via **Redis membership** first; migrate to GKE DNS-based membership if we move to Kubernetes.
 
 # 9. Later “real money” switches
 
@@ -101,12 +89,14 @@ Phoenix LiveView:
 | PSP / card acquiring | Add `payment_provider` table + webhook consumer; post cleared deposits to Wallet | Separate currency codes, idempotent ledger |
 | KYC/AML              | Extend Identity with `kyc_state`; create workflow service                        | User ID centralised                        |
 | Regulators’ audit    | Snapshot `table.events` nightly to S3 / BigQuery                                 | Event streams exist                        |
-| Risk engine          | Consume `wallet.entries`; run rules in separate Elixir app                       | Kafka topic ready                          |
+| Risk engine          | Consume `wallet.entries`; run rules in separate app                              | Web broker topic ready                     |
 
 # Open threads (feel free to answer later)
 
 1. **Randomness / fairness** – RNG on server or certified hardware RNG?
 2. **Geo-blocking** – plan to block IPs from real-money-restricted regions?
 3. **Data residency** – any region constraints (e.g., EU vs US)?
+4. ⚠ **Custom-claim size** – monitor roles/status list; Firebase limit 1 KB.
+5. 💰 **Cloud Run vs GKE TCO** – revisit after load test.
 
-Nail the wallet schema and the game adaptor next; everything else will fall neatly into place. Enjoy building the BEAM-powered casino!
+Nail the wallet schema and the game adaptor next; everything else will fall neatly into place.
