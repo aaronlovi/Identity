@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		Directory.Build.props = Directory.Build.props
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{9755DCA3-6B29-49F9-81B6-E3CC7BA108D8}"
@@ -133,5 +134,8 @@ Global
 		{9755DCA3-6B29-49F9-81B6-E3CC7BA108D8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{063ECA99-C5D8-44F4-8581-20AEA1B19C4C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{66EF0563-6592-4FC5-8B71-71306C99F18D} = {9755DCA3-6B29-49F9-81B6-E3CC7BA108D8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {55E2C1EC-433C-44BB-873B-A31C04BC2C31}
 	EndGlobalSection
 EndGlobal
