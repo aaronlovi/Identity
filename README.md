@@ -97,20 +97,61 @@ The Identity Service provides secure user authentication, authorization, and use
 
 5. **Start the services**
 
-   ```bash
-   # Terminal 1: Orleans Host
-   dotnet run --project Identity.Host
+   **Option A: Using VS Code Tasks (Recommended)**
 
-   # Terminal 2: API Gateway
-   dotnet run --project Identity.Gateway
+   ```bash
+   # In VS Code: Ctrl+Shift+P → Tasks: Run Task → "Start Both Services"
+   # Or individually:
+   # - "Start Orleans Host" (starts Orleans silo)
+   # - "Start Identity Gateway" (starts API gateway)
+   ```
+
+   **Option B: Manual Terminal Commands**
+
+   ```bash
+   # Terminal 1: Orleans Host (start first)
+   cd src/Identity.Host
+   dotnet run
+
+   # Terminal 2: API Gateway (start after Orleans Host is running)
+   cd src/Identity.Gateway
+   dotnet run
    ```
 
 6. **Verify setup**
 
    ```bash
-   curl http://localhost:5000/health
-   # Should return: {"status": "healthy"}
+   # Test API Gateway health
+   curl http://localhost:5036/health
+   # Should return: {"status":"healthy","orleans":"connected"}
+
+   # Test Orleans Dashboard
+   # Open: http://localhost:8080
    ```
+
+### Key Endpoints & Ports
+
+After successful startup, you'll have access to:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Identity API** | <http://localhost:5036> | Public HTTP API endpoints |
+| **API Health Check** | <http://localhost:5036/health> | Orleans connectivity & service status |
+| **Swagger UI** | <http://localhost:5036/swagger> | Interactive API documentation |
+| **Orleans Dashboard** | <http://localhost:8080> | Real-time Orleans monitoring & debugging |
+| **Orleans Silo** | Internal (127.0.0.1:11111) | Orleans runtime (internal) |
+| **Orleans Gateway** | Internal (127.0.0.1:30000) | Orleans client connections (internal) |
+
+### VS Code Integration
+
+The project includes VS Code tasks for streamlined development:
+
+- **Ctrl+Shift+P** → **Tasks: Run Task** → Select from:
+  - **"Start Both Services"** - Starts Orleans Host then Gateway
+  - **"Start Orleans Host"** - Starts Orleans silo only
+  - **"Start Identity Gateway"** - Starts API gateway only
+  - **"Build Solution"** - Builds entire solution
+- **Ctrl+Shift+B** - Quick build (default task)
 
 ### Project Structure
 
@@ -131,6 +172,8 @@ Identity/
 ├── docs/
 │   ├── adrs/                     # Architecture Decision Records
 │   └── [design documents]
+├── .vscode/
+│   └── tasks.json                # VS Code task definitions
 └── README.md
 ```
 
