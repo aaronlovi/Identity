@@ -105,7 +105,7 @@
 
 |  **ID**    |  **What**                                                                 |  **Where**    |  **Test / verify**               |    **Est.**  |
 |:-----------|:--------------------------------------------------------------------------|:--------------|:---------------------------------|-------------:|
-| **I-01**   | `dotnet new blazorserver -n Identity.AdminUi`                             | src/          | App runs on https://localhost    |          0.3 |
+| **I-01**   | `dotnet new blazorserver -n Identity.AdminUi`                             | src/          | App runs on <https://localhost>    |          0.3 |
 | **I-02**   | Add gRPC client to Admin UI; inject certs                                 | AdminUi       | Fetch user by ID                 |          0.5 |
 | **I-03**   | Page “User Details” – show roles, status, buttons “Ban / Unban / Promote” | AdminUi       | Click button updates DB & claims |          1   |
 | **I-04**   | SSE or SignalR “Event Log” – stream from Pub/Sub sub via HTTP handler     | AdminUi       | New event appears within 2 s     |          0.7 |
