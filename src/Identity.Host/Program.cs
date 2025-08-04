@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
+using Identity.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -18,8 +22,17 @@ internal class Program {
                     .ConfigureLogging(logging => logging.AddConsole())
                     .UseDashboard(options => { }); // Optional: Orleans Dashboard for monitoring
             })
-            .ConfigureServices(services => {
-                // Add any additional services here
+            .ConfigureAppConfiguration((context, config) => {
+                _ = config.
+                    AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).
+                    AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true).
+                    AddEnvironmentVariables();
+            })
+            .ConfigureServices((context, services) => {
+                var migrationAssemblies = new List<Assembly> {
+                    typeof(Infrastructure.ServiceCollectionExtensions).Assembly
+                };
+                _ = services.AddInfrastructureServices(context.Configuration, migrationAssemblies);
             })
             .UseConsoleLifetime();
 

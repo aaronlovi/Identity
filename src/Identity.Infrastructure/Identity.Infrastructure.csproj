@@ -1,5 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <EmbeddedResource Include="Database\Migrations\*.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\InnoAndLogic\InnoAndLogic.Persistence\InnoAndLogic.Persistence.csproj" />
   </ItemGroup>
 </Project>
