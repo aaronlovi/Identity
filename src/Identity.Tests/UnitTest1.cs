@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Identity.Tests;
+﻿namespace Identity.Tests;
 
 public class UnitTest1 {
     [Fact]
