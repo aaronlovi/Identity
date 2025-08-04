@@ -28,8 +28,9 @@ src/
 └── Identity.Tests/             # Unit tests
 functions/                      # Firebase Cloud Functions
 infra/
-├── docker-compose.yml          # Local development stack
-└── migrations/                 # Database migrations
+├── docker/                     # Docker infrastructure
+└── firebase/                   # Firebase configuration and service accounts
+    └── local-firebase/         # Local Firebase emulator configuration
 docs/
 ├── adrs/                       # Architecture Decision Records
 └── [existing docs]/

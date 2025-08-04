@@ -1,10 +1,10 @@
-﻿namespace Identity.Tests;
+﻿using Xunit;
 
-public class UnitTest1
-{
+namespace Identity.Tests;
+
+public class UnitTest1 {
     [Fact]
-    public void Test1()
-    {
+    public void Test1() {
 
     }
 }
