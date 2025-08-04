@@ -20,7 +20,7 @@ The Identity Service provides secure user authentication, authorization, and use
 
 ### High-Level Components
 
-```
+```text
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Client Apps   │───▶│   API Gateway    │───▶│ Downstream APIs │
 │ (Web, Mobile)   │    │ (Token Verify)   │    │  (Game, Wallet) │
@@ -155,7 +155,7 @@ The project includes VS Code tasks for streamlined development:
 
 ### Project Structure
 
-```
+```text
 Identity/
 ├── src/
 │   ├── Identity.sln              # Visual Studio solution
@@ -404,23 +404,23 @@ dotnet test --filter Category=Integration
 
 ### Common Issues
 
-**"Firebase Admin SDK not initialized"**
+#### "Firebase Admin SDK not initialized"
 
 - Ensure `GOOGLE_APPLICATION_CREDENTIALS` points to valid service account key
 - Verify Firebase project ID configuration
 
-**"Database connection failed"**
+#### "Database connection failed"
 
 - Check PostgreSQL is running: `docker compose ps`
 - Verify connection string format
 - Ensure database exists and migrations applied
 
-**"Pub/Sub emulator not found"**
+#### "Pub/Sub emulator not found"
 
 - Start emulator: `docker compose up pubsub-emulator`
 - Verify `PUBSUB_EMULATOR_HOST` environment variable
 
-**"Orleans clustering failed"**
+#### "Orleans clustering failed"
 
 - For local development, ensure no other Orleans instances running
 - For production, verify Redis connection string
