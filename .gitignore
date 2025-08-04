@@ -38,7 +38,7 @@ bld/
 #wwwroot/
 
 ## Visual Studio 2019
-.vscode/
+# .vscode/
 
 # Rider
 .idea/

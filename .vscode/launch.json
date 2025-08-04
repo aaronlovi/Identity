@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Start Orleans Host",
+            "type": "node",
+            "request": "launch",
+            "preLaunchTask": "Start Orleans Host",
+            "program": "${workspaceFolder}/src/Identity.Host/bin/Debug/net8.0/Identity.Host.dll"
+        },
+        {
+            "name": "Start Identity Gateway",
+            "type": "node",
+            "request": "launch",
+            "preLaunchTask": "Start Identity Gateway",
+            "program": "${workspaceFolder}/src/Identity.Gateway/bin/Debug/net8.0/Identity.Gateway.dll"
+        },
+        {
+            "name": "Start Both Services",
+            "type": "node",
+            "request": "launch",
+            "preLaunchTask": "Start Both Services"
+        }
+    ]
+}
