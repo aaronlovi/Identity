@@ -8,6 +8,7 @@ set DB_INSTANCE=identity-postgres-dev
 set DB_PORT=5432
 
 :MAIN_MENU
+set choice=
 cls
 echo ===============================================
 echo   Identity Service - Development Tools
@@ -23,11 +24,13 @@ echo   Available Commands:
 echo ===============================================
 echo.
 echo [1] Start Cloud SQL Proxy
+echo [2] Start Firebase Emulators
 echo [Q] Quit
 echo.
 set /p choice="Enter your choice: "
 
 if /i "%choice%"=="1" goto START_PROXY
+if /i "%choice%"=="2" goto START_FIREBASE
 if /i "%choice%"=="q" goto QUIT
 if /i "%choice%"=="Q" goto QUIT
 
@@ -60,6 +63,29 @@ echo.
 start "Cloud SQL Proxy" cloud-sql-proxy %GCP_PROJECT%:%GCP_REGION%:%DB_INSTANCE% --port %DB_PORT%
 
 echo Cloud SQL Proxy started in new window.
+echo.
+pause
+goto MAIN_MENU
+
+:START_FIREBASE
+cls
+echo ===============================================
+echo   Starting Firebase Emulators
+echo ===============================================
+echo.
+echo Project: demo-local
+echo Auth Emulator: http://localhost:9099
+echo Emulator UI: http://localhost:4000
+echo.
+echo Starting Firebase emulators in new window...
+echo.
+echo The emulators will run in a separate window.
+echo Close that window or press Ctrl+C in it to stop the emulators.
+echo.
+
+start "Firebase Emulators" /D "%~dp0infra\firebase\local-firebase" firebase emulators:start --only auth --project demo-local
+
+echo Firebase emulators started in new window.
 echo.
 pause
 goto MAIN_MENU

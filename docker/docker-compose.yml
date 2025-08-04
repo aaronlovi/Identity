@@ -29,9 +29,24 @@ services:
     networks:
       - identity-network
 
+  pubsub-emulator:
+    image: google/cloud-sdk:${GCLOUD_VERSION}
+    container_name: identity-pubsub-emulator
+    ports:
+      - "8085:8085"
+    environment:
+      - PUBSUB_PROJECT_ID=local-dev
+    command: >
+      gcloud beta emulators pubsub start 
+      --project=local-dev
+      --host-port=0.0.0.0:8085
+    restart: unless-stopped
+    networks:
+      - identity-network
+
 volumes:
   postgres-data:
 
 networks:
   identity-network:
- 
+    
