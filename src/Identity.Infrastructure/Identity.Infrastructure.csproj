@@ -3,6 +3,12 @@
     <EmbeddedResource Include="Database\Migrations\*.sql" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Persistence\Migrations\V001__Baseline.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Persistence\Migrations\V001__Baseline.sql" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\InnoAndLogic\InnoAndLogic.Persistence\InnoAndLogic.Persistence.csproj" />
   </ItemGroup>
 </Project>

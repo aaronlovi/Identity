@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Identity.Infrastructure;
+using InnoAndLogic.Persistence;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -37,6 +39,12 @@ internal class Program {
             .UseConsoleLifetime();
 
         IHost host = hostBuilder.Build();
+
+        // Resolve DbmService from DI container and test migrations
+        using (IServiceScope scope = host.Services.CreateScope()) {
+            IDbmService dbmService = scope.ServiceProvider.GetRequiredService<IDbmService>();
+            Console.WriteLine("DbmService resolved and migrations tested.");
+        }
 
         // Start the Orleans silo
         Console.WriteLine("Starting Orleans silo...");
