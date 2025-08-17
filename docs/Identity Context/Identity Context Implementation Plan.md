@@ -46,7 +46,7 @@
 
 |  **ID**    |  **What**                                                                                        |  **Where**    |  **Test / verify**                             |    **Est.**  |
 |:-----------|:-------------------------------------------------------------------------------------------------|:--------------|:-----------------------------------------------|-------------:|
-| **C-01**   | Install Firebase CLI; `firebase init functions` (choose .NET 6) in `functions/`                  | functions/    | `dotnet run` under emulator                    |          0.5 |
+| **C-01**   | Install Firebase CLI; `firebase init functions` in `functions/`                  | functions/    | `dotnet run` under emulator                    |          0.5 |
 | **C-02**   | Function **OnCreateUser**: • insert row via REST to Gateway (or direct SQL) • set default claims | functions/    | Register via Emulator UI → DB row appears      |          1   |
 | **C-03**   | Publish **UserCreated** message to local Pub/Sub emulator (`PubsubClient`)                       | functions/    | `gcloud pubsub topics list` shows msg count ↑  |          0.5 |
 | **C-04**   | Add **beforeSignIn** trigger → refresh custom claims if stale                                    | functions/    | Toggle role in DB → next sign-in has new claim |          0.8 |
