@@ -83,7 +83,7 @@ echo The emulators will run in a separate window.
 echo Close that window or press Ctrl+C in it to stop the emulators.
 echo.
 
-start "Firebase Emulators" /D "%~dp0infra\firebase\local-firebase" firebase emulators:start --only auth --project demo-local
+start "Firebase Emulators" /D "%~dp0infra\firebase\local-firebase" firebase emulators:start --only auth,functions --project demo-local
 
 echo Firebase emulators started in new window.
 echo.

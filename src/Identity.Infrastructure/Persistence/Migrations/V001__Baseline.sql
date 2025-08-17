@@ -17,14 +17,14 @@ COMMENT ON COLUMN ${schema}.generator.last_reserved IS 'The last reserved ID for
 -------------------------------------------------------------------------------
 
 CREATE TABLE ${schema}.users (
-    user_id BIGINT PRIMARY KEY,
+    user_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     firebase_uid VARCHAR(128) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 COMMENT ON TABLE ${schema}.users IS 'Stores basic user information';
-COMMENT ON COLUMN ${schema}.users.user_id IS 'Unique identifier for the user, generated externally';
+COMMENT ON COLUMN ${schema}.users.user_id IS 'Unique identifier for the user, auto-incremented by the database';
 COMMENT ON COLUMN ${schema}.users.firebase_uid IS 'Firebase UID for authentication mapping';
 COMMENT ON COLUMN ${schema}.users.created_at IS 'Timestamp when the user was created';
 COMMENT ON COLUMN ${schema}.users.updated_at IS 'Timestamp when the user was last updated';
