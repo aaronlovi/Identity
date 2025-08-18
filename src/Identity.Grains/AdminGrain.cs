@@ -31,7 +31,7 @@ public class AdminGrain : Grain, IAdminGrain {
         return base.OnActivateAsync(ct);
     }
 
-    public Task<GetUserResponse> GetUserAsync() {
+    public Task<GetUserResponse> GetUserAsync(CancellationToken cancellationToken = default) {
         long userId = this.GetPrimaryKeyLong();
         _logger.LogDebug("GetUserAsync called for user_id: {UserId}", userId);
 
@@ -52,7 +52,7 @@ public class AdminGrain : Grain, IAdminGrain {
         });
     }
 
-    public Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, string? reason = null) {
+    public Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, string? reason = null, CancellationToken cancellationToken = default) {
         long userId = this.GetPrimaryKeyLong();
         _logger.LogInformation("SetUserStatusAsync called for user_id: {UserId}, new status: {Status}, reason: {Reason}",
             userId, newStatus, reason);
@@ -74,7 +74,7 @@ public class AdminGrain : Grain, IAdminGrain {
         });
     }
 
-    public Task<UpdateUserRolesResponse> UpdateUserRolesAsync(IEnumerable<string> addRoles, IEnumerable<string> removeRoles) {
+    public Task<UpdateUserRolesResponse> UpdateUserRolesAsync(IEnumerable<string> addRoles, IEnumerable<string> removeRoles, CancellationToken cancellationToken = default) {
         long userId = this.GetPrimaryKeyLong();
         _logger.LogInformation("UpdateUserRolesAsync called for user_id: {UserId}, add: [{AddRoles}], remove: [{RemoveRoles}]",
             userId, string.Join(",", addRoles), string.Join(",", removeRoles));
@@ -101,7 +101,7 @@ public class AdminGrain : Grain, IAdminGrain {
         });
     }
 
-    public Task<MintCustomTokenResponse> MintCustomTokenAsync(int ttlMinutes = 15, IDictionary<string, string>? additionalClaims = null) {
+    public Task<MintCustomTokenResponse> MintCustomTokenAsync(int ttlMinutes = 15, IDictionary<string, string>? additionalClaims = null, CancellationToken cancellationToken = default) {
         long userId = this.GetPrimaryKeyLong();
         _logger.LogInformation("MintCustomTokenAsync called for user_id: {UserId}, ttl: {TTL} minutes", userId, ttlMinutes);
 
