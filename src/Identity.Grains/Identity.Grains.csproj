@@ -1,3 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Orleans.Core" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Identity.Protos\Identity.Protos.csproj" />
+    </ItemGroup>
+
 </Project>

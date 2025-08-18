@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Identity.Infrastructure;
+using Identity.Grains;
 using InnoAndLogic.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,9 @@ internal class Program {
                     typeof(Infrastructure.ServiceCollectionExtensions).Assembly
                 };
                 _ = services.AddInfrastructureServices(context.Configuration, migrationAssemblies);
+                
+                // Configure AdminGrain options
+                _ = services.Configure<AdminGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
             })
             .UseConsoleLifetime();
 
