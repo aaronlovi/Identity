@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package identity.admin.v1;
+option csharp_namespace = "Identity.Protos.V1";
+
+import "google/protobuf/timestamp.proto";
+
+enum UserStatus {
+    USER_STATUS_UNSPECIFIED = 0;
+    USER_STATUS_ACTIVE = 1;
+    USER_STATUS_BANNED = 2;
+    USER_STATUS_SHADOW_BANNED = 3;
+}
+
+message ErrorInfo {
+    int32 error_code = 1; // 0 on success
+    string error_message = 2; // null/empty if no error
+    repeated string error_params = 3; // null/empty if no error
+}
+
+message User {
+    int64 user_id = 1;
+    string firebase_uid = 2;
+    repeated string roles = 3;
+    UserStatus status = 4;
+    bool email_verified = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp updated_at = 7;
+}
+
+message GetUserRequest {
+    oneof key {
+        int64 user_id = 1;
+        string firebase_uid = 2;
+    }
+}
+
+message GetUserResponse {
+    ErrorInfo error_info = 1;
+    User user = 2;
+}
+
+message SetUserStatusRequest {
+    oneof key {
+        int64 user_id = 1;
+        string firebase_uid = 2;
+    }
+    UserStatus new_status = 3;
+    string reason = 4; // optional operator note
+}
+
+message SetUserStatusResponse {
+    ErrorInfo error_info = 1;
+    User user = 2;
+}
+
+message UpdateUserRolesRequest {
+    oneof key {
+        int64 user_id = 1;
+        string firebase_uid = 2;
+    }
+    repeated string add_roles = 3;
+    repeated string remove_roles = 4;
+}
+
+message UpdateUserRolesResponse {
+    ErrorInfo error_info = 1;
+    User user = 2;
+}
+
+message MintCustomTokenRequest {
+    oneof key {
+        int64 user_id = 1;
+        string firebase_uid = 2;
+    }
+    int32 ttl_minutes = 3; // recommend <= 15 minutes
+    map<string, string> additional_claims = 4; // optional
+}
+
+message MintCustomTokenResponse {
+    ErrorInfo error_info = 1;
+    string custom_token = 2;
+    google.protobuf.Timestamp expires_at = 3;
+}
+
+service IdentityAdmin {
+    rpc GetUser(GetUserRequest) returns (GetUserResponse);
+    rpc SetUserStatus(SetUserStatusRequest) returns (SetUserStatusResponse);
+    rpc UpdateUserRoles(UpdateUserRolesRequest) returns (UpdateUserRolesResponse);
+    rpc MintCustomToken(MintCustomTokenRequest) returns (MintCustomTokenResponse);
+}
