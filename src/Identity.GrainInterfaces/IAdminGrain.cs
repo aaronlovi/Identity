@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Identity.Protos.V1;
 using Orleans;
 
-namespace Identity.Grains;
+namespace Identity.GrainInterfaces;
 
 /// <summary>
 /// Per-user Orleans grain for admin operations on identity data.

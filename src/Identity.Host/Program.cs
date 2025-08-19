@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Hosting;
 using Hosting = Microsoft.Extensions.Hosting;
+using Identity.GrainInterfaces;
 
 namespace Identity.Host;
 
@@ -32,7 +33,7 @@ internal class Program {
                     AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) => {
-                var migrationAssemblies = new List<Assembly> {
+                var migrationAssemblies = new List<System.Reflection.Assembly> {
                     typeof(Infrastructure.ServiceCollectionExtensions).Assembly
                 };
                 _ = services.AddInfrastructureServices(context.Configuration, migrationAssemblies);
@@ -40,6 +41,7 @@ internal class Program {
                 // Configure AdminGrain options
                 _ = services.Configure<AdminGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
             })
+            .ConfigureLogging((context, builder) => builder.ClearProviders())
             .UseConsoleLifetime();
 
         IHost host = hostBuilder.Build();
@@ -55,6 +57,9 @@ internal class Program {
         await host.StartAsync();
 
         Console.WriteLine("Orleans silo is running. Press Ctrl+C to shut down.");
+
+        IGrainFactory grainFactory = host.Services.GetRequiredService<IGrainFactory>();
+        IAdminGrain adminGrain = grainFactory.GetGrain<IAdminGrain>(12345);
 
         // Wait for shutdown
         await host.WaitForShutdownAsync();

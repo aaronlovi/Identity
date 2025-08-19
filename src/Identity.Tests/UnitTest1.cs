@@ -1,29 +1,36 @@
-﻿using System;
+﻿using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
+using Identity.GrainInterfaces;
 using Identity.Grains;
 using Identity.Protos.V1;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Orleans.Hosting;
 using Orleans.TestingHost;
+using Xunit;
 
 namespace Identity.Tests;
 
-public class AdminGrainTests : IClassFixture<AdminGrainTests.TestClusterFixture> {
-    private readonly TestCluster _cluster;
+//[Collection(ClusterCollection.Name)]
+public class AdminGrainTests {
+    //private readonly TestCluster _cluster;
 
-    public AdminGrainTests(TestClusterFixture fixture) {
-        _cluster = fixture.Cluster;
-    }
+    //public AdminGrainTests(ClusterFixture fixture) {
+    //    _cluster = fixture.Cluster;
+    //}
 
     [Fact]
     public async Task AdminGrain_ShouldActivate_Successfully() {
+        var builder = new TestClusterBuilder();
+        //_ = builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
+        TestCluster cluster = builder.Build();
+        cluster.Deploy();
+
         // Arrange
         const long userId = 12345;
-        IAdminGrain grain = _cluster.GrainFactory.GetGrain<IAdminGrain>(userId);
+        IAdminGrain grain = cluster.GrainFactory.GetGrain<IAdminGrain>(userId);
 
         // Act
         GetUserResponse response = await grain.GetUserAsync();
+
+        cluster.StopAllSilos();
 
         // Assert
         Assert.NotNull(response);
@@ -34,32 +41,31 @@ public class AdminGrainTests : IClassFixture<AdminGrainTests.TestClusterFixture>
         Assert.Equal(UserStatus.Active, response.User.Status);
     }
 
-    public class TestClusterFixture : IDisposable {
-        public TestCluster Cluster { get; }
+    //public class TestClusterFixture : IDisposable {
+    //    public TestCluster Cluster { get; }
 
-        public TestClusterFixture() {
-            var builder = new TestClusterBuilder();
-            _ = builder.AddSiloBuilderConfigurator<SiloConfigurator>();
-            Cluster = builder.Build();
-            Cluster.Deploy();
-        }
+    //    public TestClusterFixture() {
+    //        var builder = new TestClusterBuilder();
+    //        _ = builder.AddSiloBuilderConfigurator<SiloConfigurator>();
+    //        Cluster = builder.Build();
+    //        Cluster.Deploy();
+    //    }
 
-        public void Dispose() {
-            Cluster?.StopAllSilos();
-            Cluster?.Dispose();
-        }
+    //    public void Dispose() {
+    //        Cluster?.StopAllSilos();
+    //        Cluster?.Dispose();
+    //    }
 
-        private class SiloConfigurator : ISiloConfigurator {
-            public void Configure(ISiloBuilder siloBuilder) {
-                _ = siloBuilder.ConfigureServices(services => {
-                    _ = services.AddLogging(builder => builder.AddConsole());
+    //    private class SiloConfigurator : ISiloConfigurator {
+    //        public void Configure(ISiloBuilder siloBuilder) {
+    //            _ = siloBuilder.ConfigureServices(services => {
+    //                _ = services.AddLogging(builder => builder.AddConsole());
 
-                    // Configure AdminGrainOptions for testing
-                    _ = services.Configure<AdminGrainOptions>(options => {
-                        options.CacheExpiry = TimeSpan.FromMinutes(2); // Shorter for tests
-                    });
-                });
-            }
-        }
-    }
+    //                // Configure AdminGrainOptions for testing
+    //                _ = services.Configure<AdminGrainOptions>(options => 
+    //                    options.CacheExpiry = TimeSpan.FromMinutes(2));
+    //            });
+    //        }
+    //    }
+    //}
 }
