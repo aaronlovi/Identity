@@ -3,7 +3,7 @@ using Orleans.Hosting;
 using Orleans.Serialization;
 using Orleans.TestingHost;
 
-namespace Identity.Tests;
+namespace Identity.Grains.Tests;
 
 public sealed class TestClientConfigurations : IClientBuilderConfigurator {
     public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) {

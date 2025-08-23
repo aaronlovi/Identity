@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace Identity.Tests;
+namespace Identity.Grains.Tests;
 
 [CollectionDefinition("TestClusterCollection")]
 public class TestClusterCollection : ICollectionFixture<TestClusterFixture> { }

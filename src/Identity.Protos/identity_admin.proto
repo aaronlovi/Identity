@@ -51,7 +51,6 @@ message SetUserStatusRequest {
 
 message SetUserStatusResponse {
     ErrorInfo error_info = 1;
-    User user = 2;
 }
 
 message UpdateUserRolesRequest {
@@ -65,7 +64,6 @@ message UpdateUserRolesRequest {
 
 message UpdateUserRolesResponse {
     ErrorInfo error_info = 1;
-    User user = 2;
 }
 
 message MintCustomTokenRequest {

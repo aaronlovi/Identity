@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\..\InnoAndLogic\InnoAndLogic.Persistence\InnoAndLogic.Persistence.csproj" />
+    <ProjectReference Include="..\Identity.Infrastructure\Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\Identity.Protos\Identity.Protos.csproj" />
   </ItemGroup>
 </Project>

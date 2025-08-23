@@ -1,15 +1,27 @@
-﻿using Orleans.Hosting;
+﻿using Identity.Infrastructure.Persistence;
+using Microsoft.Extensions.Configuration;
+using Orleans.Hosting;
 using Orleans.Serialization;
 using Orleans.TestingHost;
 
-namespace Identity.Tests;
+namespace Identity.Grains.Tests;
 
 public sealed class TestSiloConfigurations : ISiloConfigurator {
     public void Configure(ISiloBuilder siloBuilder) {
-        _ = siloBuilder.
-            AddMemoryGrainStorageAsDefault().
-            UseInMemoryReminderService()
+        // Build configuration manually since we don't have access to hosting context
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.Test.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        _ = siloBuilder
+            .AddMemoryGrainStorageAsDefault()
+            .UseInMemoryReminderService()
             .ConfigureServices(services => {
+                _ = services.ConfigureIdentityPersistenceServices(
+                    configuration, "DbmOptions");
+
                 // Configure protobuf serialization for Identity.Protos types
                 _ = services.AddSerializer(serializerBuilder => {
                     _ = serializerBuilder.AddProtobufSerializer(

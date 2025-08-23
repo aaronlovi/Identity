@@ -28,4 +28,10 @@
     <ProjectReference Include="..\Identity.Protos\Identity.Protos.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

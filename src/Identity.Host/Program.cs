@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
-using Identity.Infrastructure;
+using Identity.GrainInterfaces;
 using Identity.Grains;
+using Identity.Infrastructure;
+using Identity.Infrastructure.Persistence;
 using InnoAndLogic.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +15,6 @@ using Orleans;
 using Orleans.Hosting;
 using Orleans.Serialization;
 using Hosting = Microsoft.Extensions.Hosting;
-using Identity.GrainInterfaces;
 
 namespace Identity.Host;
 
@@ -42,10 +43,13 @@ internal class Program {
                     AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) => {
-                var migrationAssemblies = new List<System.Reflection.Assembly> {
+                var migrationAssemblies = new List<Assembly> {
                     typeof(Infrastructure.ServiceCollectionExtensions).Assembly
                 };
-                _ = services.AddInfrastructureServices(context.Configuration, migrationAssemblies);
+                _ = services.ConfigureIdentityPersistenceServices(
+                    context.Configuration,
+                    "DbmOptions",
+                    migrationAssemblies);
                 
                 // Configure AdminGrain options
                 _ = services.Configure<UserManagementGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
@@ -57,7 +61,7 @@ internal class Program {
 
         // Resolve DbmService from DI container and test migrations
         using (IServiceScope scope = host.Services.CreateScope()) {
-            IDbmService dbmService = scope.ServiceProvider.GetRequiredService<IDbmService>();
+            IIdentityDbmService dbmService = scope.ServiceProvider.GetRequiredService<IIdentityDbmService>();
             Console.WriteLine("DbmService resolved and migrations tested.");
         }
 
@@ -69,6 +73,8 @@ internal class Program {
 
         IGrainFactory grainFactory = host.Services.GetRequiredService<IGrainFactory>();
         IUserManagementGrain adminGrain = grainFactory.GetGrain<IUserManagementGrain>(12345);
+
+        Protos.V1.GetUserResponse x = await adminGrain.GetUserAsync();
 
         // Wait for shutdown
         await host.WaitForShutdownAsync();

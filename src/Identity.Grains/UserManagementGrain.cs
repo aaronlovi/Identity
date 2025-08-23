@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf.WellKnownTypes;
+using Identity.Common.Mappers;
 using Identity.GrainInterfaces;
+using Identity.Infrastructure.Persistence;
+using Identity.Infrastructure.Persistence.DTOs;
 using Identity.Protos.V1;
+using InnoAndLogic.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -15,91 +19,89 @@ namespace Identity.Grains;
 /// Per-user Orleans grain implementation for admin operations.
 /// </summary>
 public class UserManagementGrain : Grain, IUserManagementGrain {
+    private readonly long _userId;
     private readonly ILogger<UserManagementGrain> _logger;
     private readonly UserManagementGrainOptions _options;
+    private readonly IIdentityDbmService _dbm;
 
     public UserManagementGrain(
         ILogger<UserManagementGrain> logger,
-        IOptions<UserManagementGrainOptions> options) {
+        IOptions<UserManagementGrainOptions> options,
+        IIdentityDbmService dbm) {
+        _userId = this.GetPrimaryKeyLong();
         _logger = logger;
         _options = options.Value;
+        _dbm = dbm;
     }
 
     public override Task OnActivateAsync(CancellationToken ct) {
-        long userId = this.GetPrimaryKeyLong();
         _logger.LogInformation("AdminGrain activated for user_id: {UserId}. Cache expiry: {CacheExpiry}",
-            userId, _options.CacheExpiry);
+            _userId, _options.CacheExpiry);
         return base.OnActivateAsync(ct);
     }
 
-    public Task<GetUserResponse> GetUserAsync(CancellationToken ct = default) {
-        long userId = this.GetPrimaryKeyLong();
-        _logger.LogDebug("GetUserAsync called for user_id: {UserId}", userId);
+    public async Task<GetUserResponse> GetUserAsync(CancellationToken ct = default) {
+        using IDisposable? userLogContext = _logger.BeginScope("UserId: {UserId}", _userId);
+        _logger.LogDebug("GetUserAsync");
 
-        // TODO: D-03 - Replace with actual database lookup
-        var stubUser = new User {
-            UserId = userId,
-            FirebaseUid = $"firebase_uid_{userId}",
-            Status = UserStatus.Active,
-            EmailVerified = true,
-            CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-30)),
-            UpdatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
-        };
-        stubUser.Roles.Add("player");
-
-        return Task.FromResult(new GetUserResponse {
-            ErrorInfo = new ErrorInfo { ErrorCode = AdminErrorCodes.Success },
-            User = stubUser
-        });
-    }
-
-    public Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, string? reason = null, CancellationToken cancellationToken = default) {
-        long userId = this.GetPrimaryKeyLong();
-        _logger.LogInformation("SetUserStatusAsync called for user_id: {UserId}, new status: {Status}, reason: {Reason}",
-            userId, newStatus, reason);
-
-        // TODO: D-04 - Implement actual status change with database and Firebase
-        var stubUser = new User {
-            UserId = userId,
-            FirebaseUid = $"firebase_uid_{userId}",
-            Status = newStatus, // Return the requested status as if it was set
-            EmailVerified = true,
-            CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-30)),
-            UpdatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
-        };
-        stubUser.Roles.Add("player");
-
-        return Task.FromResult(new SetUserStatusResponse {
-            ErrorInfo = new ErrorInfo { ErrorCode = AdminErrorCodes.Success },
-            User = stubUser
-        });
-    }
-
-    public Task<UpdateUserRolesResponse> UpdateUserRolesAsync(IEnumerable<string> addRoles, IEnumerable<string> removeRoles, CancellationToken cancellationToken = default) {
-        long userId = this.GetPrimaryKeyLong();
-        _logger.LogInformation("UpdateUserRolesAsync called for user_id: {UserId}, add: [{AddRoles}], remove: [{RemoveRoles}]",
-            userId, string.Join(",", addRoles), string.Join(",", removeRoles));
-
-        // TODO: D-04 - Implement actual role updates with database and Firebase
-        var stubUser = new User {
-            UserId = userId,
-            FirebaseUid = $"firebase_uid_{userId}",
-            Status = UserStatus.Active,
-            EmailVerified = true,
-            CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-30)),
-            UpdatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
-        };
-
-        // Simulate role changes for stub
-        stubUser.Roles.Add("player");
-        foreach (string role in addRoles) {
-            stubUser.Roles.Add(role);
+        Result<UserDTO> res = await _dbm.GetUser(_userId, ct);
+        if (res.IsFailure) {
+            _logger.LogWarning("GetUserAsync failed with error: {Error}", res.ErrorMessage);
+            return new GetUserResponse {
+                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+            };
         }
 
-        return Task.FromResult(new UpdateUserRolesResponse {
-            ErrorInfo = new ErrorInfo { ErrorCode = AdminErrorCodes.Success },
-            User = stubUser
-        });
+        _logger.LogInformation("GetUserAsync success");
+        User u = UserMapper.ToDomain(res.Value!);
+        return new GetUserResponse {
+            ErrorInfo = Utils.CreateSuccess(),
+            User = UserMapper.ToDomain(res.Value!)
+        };
+    }
+
+    public async Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, string? reason = null, CancellationToken ct = default) {
+        using IDisposable? userLogContext = _logger.BeginScope("UserId: {UserId}", _userId);
+        using IDisposable? statusLogContext = _logger.BeginScope("NewStatus: {NewStatus}", newStatus);
+        _logger.LogInformation("SetUserStatusAsync");
+
+        // TODO: D-04 - Implement actual status change with database and Firebase
+
+        Result res = await _dbm.SetUserStatus(_userId, UserMapper.ToDTO(newStatus), ct);
+        if (res.IsFailure) {
+            _logger.LogWarning("SetUserStatusAsync failed with error: {Error}", res.ErrorMessage);
+            return new SetUserStatusResponse {
+                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+            };
+        }
+
+        _logger.LogInformation("SetUserStatusAsync success");
+        return new SetUserStatusResponse {
+            ErrorInfo = Utils.CreateSuccess()
+        };
+    }
+
+    public async Task<UpdateUserRolesResponse> UpdateUserRolesAsync(
+        List<string> addRoles,
+        List<string> removeRoles,
+        CancellationToken ct = default) {
+        using IDisposable? userLogContext = _logger.BeginScope("UserId: {UserId}", this.GetPrimaryKeyLong());
+        using IDisposable? addRolesLogContext = _logger.BeginScope("AddRoles: [{AddRoles}]", string.Join(",", addRoles));
+        using IDisposable? removeRolesLogContext = _logger.BeginScope("RemoveRoles: [{RemoveRoles}]", string.Join(",", removeRoles));
+        _logger.LogInformation("UpdateUserRolesAsync");
+
+        Result res = await _dbm.UpdateUserRoles(_userId, addRoles, removeRoles, ct);
+        if (res.IsFailure) {
+            _logger.LogWarning("UpdateUserRolesAsync failed with error: {Error}", res.ErrorMessage);
+            return new UpdateUserRolesResponse {
+                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+            };
+        }
+
+        _logger.LogInformation("UpdateUserRolesAsync success");
+        return new UpdateUserRolesResponse {
+            ErrorInfo = Utils.CreateSuccess()
+        };
     }
 
     public Task<MintCustomTokenResponse> MintCustomTokenAsync(int ttlMinutes = 15, IDictionary<string, string>? additionalClaims = null, CancellationToken cancellationToken = default) {
