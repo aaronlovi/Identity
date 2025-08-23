@@ -18,13 +18,13 @@
     <PackageVersion Include="Microsoft.Orleans.Core" Version="9.2.1" />
     <PackageVersion Include="Microsoft.Orleans.Core.Abstractions" Version="9.2.1" />
     <PackageVersion Include="Microsoft.Orleans.Sdk" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.Serialization.Protobuf" Version="9.2.1" />
     <PackageVersion Include="Microsoft.Orleans.Server" Version="9.2.1" />
     <PackageVersion Include="OrleansDashboard" Version="8.2.0" />
     <PackageVersion Include="Serilog" Version="4.1.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.3" />
-  
     <!-- Test Projects -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentAssertions" Version="8.6.0" />

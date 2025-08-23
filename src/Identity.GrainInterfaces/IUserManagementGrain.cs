@@ -10,7 +10,7 @@ namespace Identity.GrainInterfaces;
 /// Per-user Orleans grain for admin operations on identity data.
 /// Grain key is the user_id (int64).
 /// </summary>
-public interface IAdminGrain : IGrainWithIntegerKey {
+public interface IUserManagementGrain : IGrainWithIntegerKey {
     /// <summary>
     /// Get user information by user_id (grain key).
     /// Returns stub data for D-02.

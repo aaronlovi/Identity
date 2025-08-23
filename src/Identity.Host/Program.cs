@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Hosting;
+using Orleans.Serialization;
 using Hosting = Microsoft.Extensions.Hosting;
 using Identity.GrainInterfaces;
 
@@ -24,7 +25,15 @@ internal class Program {
                 // Use localhost clustering for local development
                 _ = siloBuilder.UseLocalhostClustering()
                     .ConfigureLogging(logging => logging.AddConsole())
-                    .UseDashboard(options => { }); // Optional: Orleans Dashboard for monitoring
+                    .UseDashboard(options => { })
+                    .ConfigureServices(services => {
+                        // Configure protobuf serialization for Identity.Protos types
+                        _ = services.AddSerializer(serializerBuilder => {
+                            _ = serializerBuilder.AddProtobufSerializer(
+                                isSerializable: type => type.Namespace?.StartsWith("Identity.Protos") == true,
+                                isCopyable: type => type.Namespace?.StartsWith("Identity.Protos") == true);
+                        });
+                    }); // Optional: Orleans Dashboard for monitoring
             })
             .ConfigureAppConfiguration((context, config) => {
                 _ = config.
@@ -39,7 +48,7 @@ internal class Program {
                 _ = services.AddInfrastructureServices(context.Configuration, migrationAssemblies);
                 
                 // Configure AdminGrain options
-                _ = services.Configure<AdminGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
+                _ = services.Configure<UserManagementGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
             })
             .ConfigureLogging((context, builder) => builder.ClearProviders())
             .UseConsoleLifetime();
@@ -59,7 +68,7 @@ internal class Program {
         Console.WriteLine("Orleans silo is running. Press Ctrl+C to shut down.");
 
         IGrainFactory grainFactory = host.Services.GetRequiredService<IGrainFactory>();
-        IAdminGrain adminGrain = grainFactory.GetGrain<IAdminGrain>(12345);
+        IUserManagementGrain adminGrain = grainFactory.GetGrain<IUserManagementGrain>(12345);
 
         // Wait for shutdown
         await host.WaitForShutdownAsync();

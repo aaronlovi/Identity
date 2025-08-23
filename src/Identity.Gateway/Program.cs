@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Orleans;
 using Orleans.Hosting;
 using Orleans.Runtime;
+using Orleans.Serialization;
 
 namespace Identity.Gateway;
 
@@ -22,7 +23,15 @@ internal class Program {
 
         // Add Orleans client
         _ = builder.Host.UseOrleansClient(clientBuilder =>
-            clientBuilder.UseLocalhostClustering());
+            clientBuilder.UseLocalhostClustering()
+                .ConfigureServices(services => {
+                    // Configure protobuf serialization for Identity.Protos types
+                    _ = services.AddSerializer(serializerBuilder => {
+                        _ = serializerBuilder.AddProtobufSerializer(
+                            isSerializable: type => type.Namespace?.StartsWith("Identity.Protos") == true,
+                            isCopyable: type => type.Namespace?.StartsWith("Identity.Protos") == true);
+                    });
+                }));
 
         WebApplication app = builder.Build();
 
