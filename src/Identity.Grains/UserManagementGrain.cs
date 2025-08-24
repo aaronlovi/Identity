@@ -271,6 +271,12 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
     }
 
     private async Task<Result> SetFirebaseClaims() {
+        // Skip Firebase operations if disabled (e.g., for testing)
+        if (_options.DisableFirebaseOperations) {
+            _logger.LogDebug("Firebase operations disabled, skipping SetCustomUserClaimsAsync");
+            return Result.Success;
+        }
+
         var claims = new Dictionary<string, object> {
             ["roles"] = _cachedUser!.Roles,
             ["status"] = _cachedUser.Status

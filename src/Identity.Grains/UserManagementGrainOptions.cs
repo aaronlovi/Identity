@@ -21,4 +21,10 @@ public class UserManagementGrainOptions {
     /// Default: "system"
     /// </summary>
     public string DefaultChangedBy { get; set; } = "system";
+
+    /// <summary>
+    /// Whether to disable Firebase operations (useful for testing).
+    /// Default: false
+    /// </summary>
+    public bool DisableFirebaseOperations { get; set; } = false;
 }

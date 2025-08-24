@@ -58,4 +58,56 @@ public class IdentityDbmInMemoryService : DbmInMemoryService, IIdentityDbmServic
             return Task.FromResult(Result.Success);
         }
     }
+
+    #region Test Support Methods
+
+    /// <summary>
+    /// Adds a user to the in-memory data store. Used for testing purposes only.
+    /// If a user with the same userId already exists, it will be replaced.
+    /// </summary>
+    /// <param name="user">The user to add</param>
+    public void AddTestUser(UserDTO user) {
+        lock (Locker) {
+            _data.AddUser(user);
+            _logger.LogDebug("Test user added: {UserId}", user.UserId);
+        }
+    }
+
+    /// <summary>
+    /// Removes a user from the in-memory data store. Used for testing purposes only.
+    /// </summary>
+    /// <param name="userId">The ID of the user to remove</param>
+    /// <returns>True if the user was found and removed, false otherwise</returns>
+    public bool RemoveTestUser(long userId) {
+        lock (Locker) {
+            bool removed = _data.RemoveUser(userId);
+            if (removed) {
+                _logger.LogDebug("Test user removed: {UserId}", userId);
+            }
+            return removed;
+        }
+    }
+
+    /// <summary>
+    /// Removes all users from the in-memory data store. Used for testing purposes only.
+    /// </summary>
+    public void ClearTestUsers() {
+        lock (Locker) {
+            _data.Clear();
+            _logger.LogDebug("All test users cleared");
+        }
+    }
+
+    /// <summary>
+    /// Gets the total count of users in the in-memory data store. Used for testing purposes only.
+    /// </summary>
+    public int TestUserCount {
+        get {
+            lock (Locker) {
+                return _data.UserCount;
+            }
+        }
+    }
+
+    #endregion
 }
