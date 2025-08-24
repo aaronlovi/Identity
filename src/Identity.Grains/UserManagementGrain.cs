@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FirebaseAdmin.Auth;
@@ -24,7 +25,7 @@ namespace Identity.Grains;
 /// </summary>
 public class UserManagementGrain : Grain, IUserManagementGrain {
     private record SetUserStatusContext(UserStatus OldStatus, UserStatus NewStatus);
-    private record UpdateRolesContext(List<string> AddRoles, List<string> RemoveRoles);
+    private record UpdateRolesContext(HashSet<string> AddRoles, HashSet<string> RemoveRoles);
 
     private readonly long _userId;
     private UserDTO? _cachedUser;
@@ -99,7 +100,7 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         Ct = ct;
 
         try {
-            return await SetUserStatusCore(newStatus, ct);
+            return await SetUserStatusCore();
         } catch (FirebaseAuthException fae) {
             _logger.LogWarning(fae, "SetFirebaseUserStatus failed with FirebaseAuthException: {Error}", fae.Message);
             return new SetUserStatusResponse {
@@ -126,10 +127,11 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         _logger.LogInformation("UpdateUserRolesAsync");
 
         // Set context
-        UpdateRolesCtx = new UpdateRolesContext(addRoles, removeRoles);
+        UpdateRolesCtx = new UpdateRolesContext([.. addRoles], [.. removeRoles]);
+        Ct = ct;
 
         try {
-            return await UpdateUserRolesCore(addRoles, removeRoles, ct);
+            return await UpdateUserRolesCore();
         } catch (FirebaseAuthException fae) {
             _logger.LogWarning(fae, "SetFirebaseClaims failed with FirebaseAuthException: {Error}", fae.Message);
             return new UpdateUserRolesResponse {
@@ -184,8 +186,9 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         return res;
     }
 
-    private async Task<SetUserStatusResponse> SetUserStatusCore(UserStatus newStatus, CancellationToken ct) {
+    private async Task<SetUserStatusResponse> SetUserStatusCore() {
         Result res = await EnsureCachedUser().
+            Then(EnsureStatusActuallyChanged).
             Then(UpdateUserStatus).
             Then(UpdateCachedUserStatus).
             Then(SetFirebaseClaims).
@@ -204,8 +207,10 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         };
     }
 
-    private async Task<UpdateUserRolesResponse> UpdateUserRolesCore(List<string> addRoles, List<string> removeRoles, CancellationToken ct) {
+    private async Task<UpdateUserRolesResponse> UpdateUserRolesCore() {
         Result res = await EnsureCachedUser().
+            Then(ValidateRoleChanges).
+            Then(EnsureRolesActuallyChanged).
             Then(UpdateUserRoles).
             Then(UpdateCachedUserRoles).
             Then(SetFirebaseClaims).
@@ -222,6 +227,19 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         return new UpdateUserRolesResponse {
             ErrorInfo = Utils.CreateSuccess()
         };
+    }
+
+    private Result EnsureStatusActuallyChanged() {
+        UserStatus oldUserStatus = UserMapper.UserStatusDtoToDomain(_cachedUser!.Status);
+        UserStatus newUserStatus = SetUserStatusCtx.NewStatus;
+        if (oldUserStatus == newUserStatus) {
+            _logger.LogInformation("EnsureStatusActuallyChanged - status unchanged ({Status}), skipping update", newUserStatus);
+            return Result.Failure(ErrorCodes.Duplicate, "New status is the same as the current status");
+        }
+
+        _logger.LogDebug("EnsureStatusActuallyChanged - status change detected: {OldStatus} -> {NewStatus}",
+            oldUserStatus, newUserStatus);
+        return Result.Success;
     }
 
     private async Task<Result> UpdateUserStatus() {
@@ -260,6 +278,45 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
             _ = _cachedUser.Roles.Remove(role);
         }
 
+        return Result.Success;
+    }
+
+    private Result ValidateRoleChanges() {
+        // Ensure no overlap between add and remove lists
+        var rolesToAdd = new HashSet<string>(UpdateRolesCtx.AddRoles);
+        var rolesToRemove = new HashSet<string>(UpdateRolesCtx.RemoveRoles);
+        rolesToAdd.IntersectWith(rolesToRemove);
+        if (rolesToAdd.Count > 0) {
+            _logger.LogWarning("ValidateRoleChanges - roles cannot be in both add and remove lists: [{ConflictingRoles}]",
+                string.Join(",", rolesToAdd));
+            return Result.Failure(ErrorCodes.ValidationError, "Roles cannot be in both add and remove lists");
+        }
+
+        _logger.LogDebug("ValidateRoleChanges - role changes validated");
+        return Result.Success;
+    }
+
+    private Result EnsureRolesActuallyChanged() {
+        var currentRoles = new HashSet<string>(_cachedUser!.Roles);
+
+        // Compute roles to add and remove
+        var rolesToActuallyAdd = UpdateRolesCtx.AddRoles.Except(currentRoles).ToHashSet();
+        var rolesToActuallyRemove = UpdateRolesCtx.RemoveRoles.Intersect(currentRoles).ToHashSet();
+
+        // Check if there are any effective changes
+        if (rolesToActuallyAdd.Count == 0 && rolesToActuallyRemove.Count == 0) {
+            _logger.LogInformation("EnsureRolesActuallyChanged - no effective role changes detected, skipping update");
+            return Result.Failure(ErrorCodes.Duplicate, "No effective role changes detected");
+        }
+
+        // Update context with computed values
+        UpdateRolesCtx = UpdateRolesCtx with {
+            AddRoles = rolesToActuallyAdd,
+            RemoveRoles = rolesToActuallyRemove
+        };
+
+        _logger.LogDebug("EnsureRolesActuallyChanged - role changes detected. To Add: [{AddRoles}], To Remove: [{RemoveRoles}]",
+            string.Join(",", rolesToActuallyAdd), string.Join(",", rolesToActuallyRemove));
         return Result.Success;
     }
 
@@ -311,8 +368,8 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         try {
             var eventData = new UserRolesUpdatedEvent(
                 UserId: _userId,
-                AddedRoles: UpdateRolesCtx.AddRoles,
-                RemovedRoles: UpdateRolesCtx.RemoveRoles,
+                AddedRoles: [.. UpdateRolesCtx.AddRoles],
+                RemovedRoles: [.. UpdateRolesCtx.RemoveRoles],
                 Roles: [.. _cachedUser!.Roles],
                 ChangedBy: _options.DefaultChangedBy,
                 ChangedAt: DateTime.UtcNow
