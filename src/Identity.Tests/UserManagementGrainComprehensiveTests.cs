@@ -81,7 +81,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         IUserManagementGrain grain = _cluster.GrainFactory.GetGrain<IUserManagementGrain>(userId);
 
         // Act
-        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Banned, "Test reason");
+        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Banned);
 
         // Assert
         _ = response.Should().NotBeNull();
@@ -101,7 +101,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         IUserManagementGrain grain = _cluster.GrainFactory.GetGrain<IUserManagementGrain>(userId);
 
         // Act
-        SetUserStatusResponse response = await grain.SetUserStatusAsync(status, $"Setting status to {status}");
+        SetUserStatusResponse response = await grain.SetUserStatusAsync(status);
 
         // Assert
         _ = response.Should().NotBeNull();
@@ -117,7 +117,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         IUserManagementGrain grain = _cluster.GrainFactory.GetGrain<IUserManagementGrain>(userId);
 
         // Act
-        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Active, null);
+        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Active);
 
         // Assert
         _ = response.Should().NotBeNull();
@@ -131,7 +131,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         IUserManagementGrain grain = _cluster.GrainFactory.GetGrain<IUserManagementGrain>(userId);
 
         // Act
-        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Banned, "");
+        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Banned);
 
         // Assert
         _ = response.Should().NotBeNull();
@@ -146,7 +146,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         // Act
-        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Active, "Test", cts.Token);
+        SetUserStatusResponse response = await grain.SetUserStatusAsync(UserStatus.Active, cts.Token);
 
         // Assert
         _ = response.Should().NotBeNull();
@@ -469,7 +469,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         GetUserResponse getUserResponse = await grain.GetUserAsync();
         _ = getUserResponse.ErrorInfo.ErrorCode.Should().NotBe(AdminErrorCodes.Success);
 
-        SetUserStatusResponse setStatusResponse = await grain.SetUserStatusAsync(UserStatus.Active, "test");
+        SetUserStatusResponse setStatusResponse = await grain.SetUserStatusAsync(UserStatus.Active);
         _ = setStatusResponse.ErrorInfo.ErrorCode.Should().NotBe(AdminErrorCodes.Success);
 
         UpdateUserRolesResponse updateRolesResponse = await grain.UpdateUserRolesAsync(["admin"], ["player"]);
@@ -494,7 +494,7 @@ public sealed class UserManagementGrainComprehensiveTests {
         // Act & Assert - Each operation should complete within reasonable time
         using var cts = new CancellationTokenSource(timeout);
         Task<GetUserResponse> getUserTask = grain.GetUserAsync(cts.Token);
-        Task<SetUserStatusResponse> setStatusTask = grain.SetUserStatusAsync(UserStatus.Banned, "test", cts.Token);
+        Task<SetUserStatusResponse> setStatusTask = grain.SetUserStatusAsync(UserStatus.Banned, cts.Token);
         Task<UpdateUserRolesResponse> updateRolesTask = grain.UpdateUserRolesAsync(["admin"], ["player"], cts.Token);
         Task<MintCustomTokenResponse> mintTokenTask = grain.MintCustomTokenAsync(15, null, cts.Token);
 

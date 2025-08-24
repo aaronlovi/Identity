@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using Identity.Infrastructure.Persistence.DTOs;
 using InnoAndLogic.Persistence.Statements.Postgres;
 using Npgsql;
@@ -55,7 +56,7 @@ GROUP BY u.user_id, u.firebase_uid, us.status, u.created_at, u.updated_at
 
     protected override bool ProcessCurrentRow(DbDataReader reader) {
         string roles = reader.GetString(_rolesIndex);
-        IEnumerable<string> rolesList = roles.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries);
+        List<string> rolesList = [.. roles.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries)];
 
         User = new UserDTO(
             UserId: reader.GetInt64(_userIdIndex),
@@ -69,5 +70,4 @@ GROUP BY u.user_id, u.firebase_uid, us.status, u.created_at, u.updated_at
         // Only one row is expected, so return false to stop further processing
         return false;
     }
-
 }

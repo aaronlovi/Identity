@@ -23,7 +23,7 @@ public interface IUserManagementGrain : IGrainWithIntegerKey {
     /// Set user status - stub implementation for D-02.
     /// </summary>
     [Alias("SetUserStatus")]
-    Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, string? reason = null, CancellationToken cancellationToken = default);
+    Task<SetUserStatusResponse> SetUserStatusAsync(UserStatus newStatus, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update user roles - stub implementation for D-02.

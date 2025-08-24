@@ -6,7 +6,7 @@ namespace Identity.Infrastructure.Persistence.DTOs;
 public record UserDTO(
     long UserId,
     string FirebaseUid,
-    IEnumerable<string> Roles,
+    List<string> Roles,
     string Status,
     DateTime CreatedAt,
     DateTime UpdatedAt) {
