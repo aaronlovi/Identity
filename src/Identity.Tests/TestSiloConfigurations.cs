@@ -1,5 +1,8 @@
-﻿using Identity.Infrastructure.Persistence;
+﻿using Identity.Grains.Tests.Mocks;
+using Identity.Infrastructure.Firebase;
+using Identity.Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
 using Orleans.Serialization;
 using Orleans.TestingHost;
@@ -21,6 +24,13 @@ public sealed class TestSiloConfigurations : ISiloConfigurator {
             .ConfigureServices(services => {
                 _ = services.ConfigureIdentityPersistenceServices(
                     configuration, "DbmOptions");
+
+                // Configure UserManagementGrain options
+                _ = services.Configure<UserManagementGrainOptions>(
+                    configuration.GetSection("UserManagementGrainOptions"));
+
+                // Register Mock EventPublisher for tests
+                _ = services.AddSingleton<IEventPublisher, MockEventPublisher>();
 
                 // Configure protobuf serialization for Identity.Protos types
                 _ = services.AddSerializer(serializerBuilder => {

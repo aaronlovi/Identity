@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using FirebaseAdmin.Auth;
 using Google.Protobuf.WellKnownTypes;
 using Identity.Common.Mappers;
 using Identity.GrainInterfaces;
+using Identity.Infrastructure.Firebase;
+using Identity.Infrastructure.Firebase.DomainModels;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.DTOs;
 using Identity.Protos.V1;
@@ -20,6 +23,7 @@ namespace Identity.Grains;
 /// Per-user Orleans grain implementation for admin operations.
 /// </summary>
 public class UserManagementGrain : Grain, IUserManagementGrain {
+    private record SetUserStatusContext(UserStatus OldStatus, UserStatus NewStatus);
     private record UpdateRolesContext(List<string> AddRoles, List<string> RemoveRoles);
 
     private readonly long _userId;
@@ -27,14 +31,15 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
     private readonly ILogger<UserManagementGrain> _logger;
     private readonly UserManagementGrainOptions _options;
     private readonly IIdentityDbmService _dbm;
+    private readonly IEventPublisher _eventPublisher;
 
-    private UserStatus? _newUserStatus;
+    private SetUserStatusContext? _setUserStatusContext;
     private UpdateRolesContext? _updateRolesContext;
     private CancellationToken? _ct;
 
-    private UserStatus NewUserStatus {
-        get => _newUserStatus ?? throw new InvalidOperationException("NewUserStatus not set");
-        set => _newUserStatus = value;
+    private SetUserStatusContext SetUserStatusCtx {
+        get => _setUserStatusContext ?? throw new InvalidOperationException("SetUserStatusContext not set");
+        set => _setUserStatusContext = value;
     }
     private UpdateRolesContext UpdateRolesCtx {
         get => _updateRolesContext ?? throw new InvalidOperationException("UpdateRolesContext not set");
@@ -48,11 +53,13 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
     public UserManagementGrain(
         ILogger<UserManagementGrain> logger,
         IOptions<UserManagementGrainOptions> options,
-        IIdentityDbmService dbm) {
+        IIdentityDbmService dbm,
+        IEventPublisher eventPublisher) {
         _userId = this.GetPrimaryKeyLong();
         _logger = logger;
         _options = options.Value;
         _dbm = dbm;
+        _eventPublisher = eventPublisher;
     }
 
     public override Task OnActivateAsync(CancellationToken ct) {
@@ -77,7 +84,7 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
 
         return new GetUserResponse {
             ErrorInfo = Utils.CreateSuccess(),
-            User = UserMapper.ToDomain(_cachedUser!)
+            User = UserMapper.UserDtoToDomain(_cachedUser!)
         };
     }
 
@@ -88,26 +95,27 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         _logger.LogInformation("SetUserStatusAsync");
 
         // Set context
-        NewUserStatus = newStatus;
+        SetUserStatusCtx = new(UserMapper.UserStatusDtoToDomain(_cachedUser?.Status), newStatus);
         Ct = ct;
 
-        Result res = await EnsureCachedUser().
-            Then(UpdateUserStatus).
-            Then(UpdateCachedUserStatus);
-
-        // TODO: D-04 - Implement actual status change with database and Firebase
-
-        if (res.IsFailure) {
-            _logger.LogWarning("SetUserStatusAsync failed with error: {Error}", res.ErrorMessage);
+        try {
+            return await SetUserStatusCore(newStatus, ct);
+        } catch (FirebaseAuthException fae) {
+            _logger.LogWarning(fae, "SetFirebaseUserStatus failed with FirebaseAuthException: {Error}", fae.Message);
             return new SetUserStatusResponse {
-                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+                ErrorInfo = Utils.CreateError($"Failed to update Firebase user status - {fae.Message}")
+            };
+        } catch (OperationCanceledException oex) {
+            _logger.LogWarning(oex, "Operation timed out: {Error}", oex.Message);
+            return new SetUserStatusResponse {
+                ErrorInfo = Utils.CreateError("Operation timed out")
+            };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "SetUserStatusAsync encountered an unexpected error: {Error}", ex.Message);
+            return new SetUserStatusResponse {
+                ErrorInfo = Utils.CreateError("An unexpected error occurred")
             };
         }
-
-        _logger.LogInformation("SetUserStatusAsync success");
-        return new SetUserStatusResponse {
-            ErrorInfo = Utils.CreateSuccess()
-        };
     }
 
     public async Task<UpdateUserRolesResponse> UpdateUserRolesAsync(List<string> addRoles, List<string> removeRoles, CancellationToken ct = default) {
@@ -120,21 +128,24 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         // Set context
         UpdateRolesCtx = new UpdateRolesContext(addRoles, removeRoles);
 
-        Result res = await EnsureCachedUser().
-            Then(UpdateUserRoles).
-            Then(UpdateCachedUserRoles);
-
-        if (res.IsFailure) {
-            _logger.LogWarning("UpdateUserRolesAsync failed with error: {Error}", res.ErrorMessage);
+        try {
+            return await UpdateUserRolesCore(addRoles, removeRoles, ct);
+        } catch (FirebaseAuthException fae) {
+            _logger.LogWarning(fae, "SetFirebaseClaims failed with FirebaseAuthException: {Error}", fae.Message);
             return new UpdateUserRolesResponse {
-                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+                ErrorInfo = Utils.CreateError($"Failed to update Firebase user claims - {fae.Message}")
+            };
+        } catch (OperationCanceledException oex) {
+            _logger.LogWarning(oex, "Operation timed out: {Error}", oex.Message);
+            return new UpdateUserRolesResponse {
+                ErrorInfo = Utils.CreateError("Operation timed out")
+            };
+        } catch (Exception ex) {
+            _logger.LogError(ex, "UpdateUserRolesAsync encountered an unexpected error: {Error}", ex.Message);
+            return new UpdateUserRolesResponse {
+                ErrorInfo = Utils.CreateError("An unexpected error occurred")
             };
         }
-
-        _logger.LogInformation("UpdateUserRolesAsync success");
-        return new UpdateUserRolesResponse {
-            ErrorInfo = Utils.CreateSuccess()
-        };
     }
 
     public Task<MintCustomTokenResponse> MintCustomTokenAsync(int ttlMinutes = 15, IDictionary<string, string>? additionalClaims = null, CancellationToken cancellationToken = default) {
@@ -144,11 +155,13 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         DateTime expiresAt = DateTime.UtcNow.AddMinutes(ttlMinutes);
 
         return Task.FromResult(new MintCustomTokenResponse {
-            ErrorInfo = new ErrorInfo { ErrorCode = AdminErrorCodes.Success },
+            ErrorInfo = Utils.CreateSuccess(),
             CustomToken = $"stub_token_for_user_{_userId}",
             ExpiresAt = Timestamp.FromDateTime(expiresAt)
         });
     }
+
+    #region PRIVATE HELPER METHODS
 
     private async Task<Result> EnsureCachedUser() {
         if (_cachedUser is not null) {
@@ -171,10 +184,50 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         return res;
     }
 
+    private async Task<SetUserStatusResponse> SetUserStatusCore(UserStatus newStatus, CancellationToken ct) {
+        Result res = await EnsureCachedUser().
+            Then(UpdateUserStatus).
+            Then(UpdateCachedUserStatus).
+            Then(SetFirebaseClaims).
+            Then(PublishUserStatusChangedEvent);
+
+        if (res.IsFailure) {
+            _logger.LogWarning("SetUserStatusAsync failed with error: {Error}", res.ErrorMessage);
+            return new SetUserStatusResponse {
+                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+            };
+        }
+
+        _logger.LogInformation("SetUserStatusAsync success");
+        return new SetUserStatusResponse {
+            ErrorInfo = Utils.CreateSuccess()
+        };
+    }
+
+    private async Task<UpdateUserRolesResponse> UpdateUserRolesCore(List<string> addRoles, List<string> removeRoles, CancellationToken ct) {
+        Result res = await EnsureCachedUser().
+            Then(UpdateUserRoles).
+            Then(UpdateCachedUserRoles).
+            Then(SetFirebaseClaims).
+            Then(PublishUserRolesUpdatedEvent);
+
+        if (res.IsFailure) {
+            _logger.LogWarning("UpdateUserRolesAsync failed with error: {Error}", res.ErrorMessage);
+            return new UpdateUserRolesResponse {
+                ErrorInfo = Utils.CreateError(res.ErrorMessage)
+            };
+        }
+
+        _logger.LogInformation("UpdateUserRolesAsync success");
+        return new UpdateUserRolesResponse {
+            ErrorInfo = Utils.CreateSuccess()
+        };
+    }
+
     private async Task<Result> UpdateUserStatus() {
         _logger.LogInformation("UpdateUserStatus");
 
-        string newUserStatusStr = UserMapper.ToDTO(NewUserStatus);
+        string newUserStatusStr = UserMapper.UserStatusToDTO(SetUserStatusCtx.NewStatus);
         Result res = await _dbm.SetUserStatus(_userId, newUserStatusStr, Ct);
         if (res.IsFailure)
             _logger.LogWarning("UpdateUserStatus failed with error: {Error}", res.ErrorMessage);
@@ -186,7 +239,7 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
         if (_cachedUser is null)
             return Result.Failure(ErrorCodes.NotFound, $"UpdateCachedUserStatus - Cached user with id {_userId} not found");
 
-        _cachedUser = _cachedUser with { Status = UserMapper.ToDTO(NewUserStatus) };
+        _cachedUser = _cachedUser with { Status = UserMapper.UserStatusToDTO(SetUserStatusCtx.NewStatus) };
         return Result.Success;
     }
 
@@ -216,4 +269,57 @@ public class UserManagementGrain : Grain, IUserManagementGrain {
             _logger.LogWarning("UpdateUserRoles failed with error: {Error}", res.ErrorMessage);
         return res;
     }
+
+    private async Task<Result> SetFirebaseClaims() {
+        var claims = new Dictionary<string, object> {
+            ["roles"] = _cachedUser!.Roles,
+            ["status"] = _cachedUser.Status
+        };
+
+        await FirebaseAuth.DefaultInstance.SetCustomUserClaimsAsync(
+            _cachedUser!.FirebaseUid, claims, Ct);
+        
+        return Result.Success;
+    }
+
+    private async Task<Result> PublishUserStatusChangedEvent() {
+        try {
+            var eventData = new UserStatusChangedEvent(
+                UserId: _userId,
+                PreviousStatus: UserMapper.UserStatusToDTO(SetUserStatusCtx.OldStatus),
+                NewStatus: _cachedUser!.Status,
+                ChangedBy: _options.DefaultChangedBy,
+                ChangedAt: DateTime.UtcNow
+            );
+
+            await _eventPublisher.PublishAsync("UserStatusChanged", eventData, _userId, Ct);
+            return Result.Success;
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Failed to publish UserStatusChanged event for user {UserId}: {Error}", _userId, ex.Message);
+            // Don't fail the entire operation if event publishing fails
+            return Result.Success;
+        }
+    }
+
+    private async Task<Result> PublishUserRolesUpdatedEvent() {
+        try {
+            var eventData = new UserRolesUpdatedEvent(
+                UserId: _userId,
+                AddedRoles: UpdateRolesCtx.AddRoles,
+                RemovedRoles: UpdateRolesCtx.RemoveRoles,
+                Roles: [.. _cachedUser!.Roles],
+                ChangedBy: _options.DefaultChangedBy,
+                ChangedAt: DateTime.UtcNow
+            );
+
+            await _eventPublisher.PublishAsync("UserRolesUpdated", eventData, _userId, Ct);
+            return Result.Success;
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Failed to publish UserRolesUpdated event for user {UserId}: {Error}", _userId, ex.Message);
+            // Don't fail the entire operation if event publishing fails
+            return Result.Success;
+        }
+    }
+
+    #endregion
 }

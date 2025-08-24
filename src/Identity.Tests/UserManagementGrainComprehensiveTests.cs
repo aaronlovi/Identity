@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Identity.GrainInterfaces;
+using Identity.Grains.Tests.Mocks;
 using Identity.Protos.V1;
 using Orleans.TestingHost;
 using Xunit;
@@ -16,6 +17,7 @@ public sealed class UserManagementGrainComprehensiveTests {
 
     public UserManagementGrainComprehensiveTests(TestClusterFixture fixture) {
         _cluster = fixture.Cluster;
+        _cluster.ClearPublishedEvents();
     }
 
     #region GetUserAsync Tests

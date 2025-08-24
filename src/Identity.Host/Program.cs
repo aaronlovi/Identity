@@ -57,7 +57,11 @@ internal class Program {
                 _ = services.ConfigureFirebase(context.Configuration, "FirebaseOptions");
 
                 // Configure AdminGrain options
-                _ = services.Configure<UserManagementGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
+                _ = services.Configure<UserManagementGrainOptions>(context.Configuration.GetSection("UserManagementGrainOptions"));
+
+                // Configure event publisher
+                _ = services.Configure<EventPublisherOptions>(context.Configuration.GetSection("EventPublisherOptions"));
+                _ = services.AddSingleton<IEventPublisher, EventPublisher>();
             })
             .ConfigureLogging((context, builder) => builder.ClearProviders())
             .UseConsoleLifetime();

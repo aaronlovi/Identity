@@ -15,4 +15,10 @@ public class UserManagementGrainOptions {
     public string? FirebaseProjectId { get; set; }
     public string? FirebaseServiceAccountKeyPath { get; set; }
     public string? FirebaseServiceAccountJson { get; set; }
+
+    /// <summary>
+    /// Identifier of the admin/operator making changes. Used for audit trails.
+    /// Default: "system"
+    /// </summary>
+    public string DefaultChangedBy { get; set; } = "system";
 }

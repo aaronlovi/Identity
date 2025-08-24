@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="FirebaseAdmin" />
+    <PackageReference Include="Google.Cloud.PubSub.V1" />
   </ItemGroup>
 
 </Project>

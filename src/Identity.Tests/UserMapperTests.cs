@@ -24,7 +24,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Should().NotBeNull();
@@ -61,7 +61,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Status.Should().Be(expectedStatus);
@@ -80,7 +80,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Status.Should().Be(UserStatus.Unspecified);
@@ -99,7 +99,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Roles.Should().NotBeNull();
@@ -119,7 +119,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Roles.Should().NotBeNull();
@@ -139,7 +139,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Roles.Should().HaveCount(5);
@@ -153,7 +153,7 @@ public sealed class UserMapperTests {
     [Fact]
     public void ToDomain_WithNullDTO_ShouldThrowArgumentNullException() {
         // Act & Assert
-        Func<User> act = () => UserMapper.ToDomain(null!);
+        Func<User> act = () => UserMapper.UserDtoToDomain(null!);
         _ = act.Should().Throw<ArgumentNullException>();
     }
 
@@ -168,7 +168,7 @@ public sealed class UserMapperTests {
     [InlineData(UserStatus.Unspecified, "active")]
     public void ToDTO_WithValidUserStatus_ShouldMapCorrectly(UserStatus userStatus, string expectedDtoStatus) {
         // Act
-        string dtoStatus = UserMapper.ToDTO(userStatus);
+        string dtoStatus = UserMapper.UserStatusToDTO(userStatus);
 
         // Assert
         _ = dtoStatus.Should().Be(expectedDtoStatus);
@@ -180,7 +180,7 @@ public sealed class UserMapperTests {
         var invalidStatus = (UserStatus)999;
 
         // Act
-        string dtoStatus = UserMapper.ToDTO(invalidStatus);
+        string dtoStatus = UserMapper.UserStatusToDTO(invalidStatus);
 
         // Assert
         _ = dtoStatus.Should().Be("active"); // Should default to active
@@ -197,7 +197,7 @@ public sealed class UserMapperTests {
 
         foreach (UserStatus originalStatus in originalStatuses) {
             // Act - Convert to DTO and back to domain
-            string dtoStatus = UserMapper.ToDTO(originalStatus);
+            string dtoStatus = UserMapper.UserStatusToDTO(originalStatus);
             var userDto = new UserDTO(
                 UserId: 1,
                 FirebaseUid: "test",
@@ -206,7 +206,7 @@ public sealed class UserMapperTests {
                 CreatedAt: DateTime.UtcNow,
                 UpdatedAt: DateTime.UtcNow
             );
-            User domainUser = UserMapper.ToDomain(userDto);
+            User domainUser = UserMapper.UserDtoToDomain(userDto);
 
             // Assert
             _ = domainUser.Status.Should().Be(originalStatus,
@@ -231,7 +231,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Should().NotBeNull();
@@ -251,7 +251,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Should().NotBeNull();
@@ -271,7 +271,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Status.Should().Be(UserStatus.Unspecified);
@@ -290,7 +290,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Status.Should().Be(UserStatus.Unspecified);
@@ -309,7 +309,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Status.Should().Be(UserStatus.Unspecified);
@@ -335,7 +335,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.CreatedAt.Should().NotBeNull();
@@ -365,7 +365,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Should().NotBeNull();
@@ -393,7 +393,7 @@ public sealed class UserMapperTests {
         );
 
         // Act
-        User user = UserMapper.ToDomain(userDto);
+        User user = UserMapper.UserDtoToDomain(userDto);
 
         // Assert
         _ = user.Should().NotBeNull();

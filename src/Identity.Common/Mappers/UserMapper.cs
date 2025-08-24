@@ -15,13 +15,13 @@ public static class UserMapper {
     /// </summary>
     /// <param name="dto">The <see cref="UserDTO"/> to convert.</param>
     /// <returns>A <see cref="User"/> domain object.</returns>
-    public static User ToDomain(UserDTO dto) {
+    public static User UserDtoToDomain(UserDTO dto) {
         ArgumentNullException.ThrowIfNull(dto);
 
         var user = new User {
             UserId = dto.UserId,
             FirebaseUid = dto.FirebaseUid ?? string.Empty,
-            Status = ParseStatus(dto.Status),
+            Status = ParseUserStatus(dto.Status),
             EmailVerified = true, // Default value; adjust if needed
             CreatedAt = Timestamp.FromDateTime(dto.CreatedAt.ToUniversalTime()),
             UpdatedAt = Timestamp.FromDateTime(dto.UpdatedAt.ToUniversalTime())
@@ -39,7 +39,7 @@ public static class UserMapper {
     /// </summary>
     /// <param name="status">The <see cref="UserStatus"/> to convert.</param>
     /// <returns>A string representation of the status.</returns>
-    public static string ToDTO(UserStatus status) =>
+    public static string UserStatusToDTO(UserStatus status) =>
         status switch {
             UserStatus.Active => "active",
             UserStatus.Banned => "banned",
@@ -48,7 +48,9 @@ public static class UserMapper {
             _ => "active" // Default fallback
         };
 
-    private static UserStatus ParseStatus(string? status) {
+    public static UserStatus UserStatusDtoToDomain(string? userStatus) => ParseUserStatus(userStatus);
+
+    private static UserStatus ParseUserStatus(string? status) {
         if (string.IsNullOrWhiteSpace(status)) {
             return UserStatus.Unspecified;
         }

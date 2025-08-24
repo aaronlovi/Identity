@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <PackageReference Include="FirebaseAdmin" />
-    <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Orleans.Core" />
     <PackageReference Include="Microsoft.Orleans.Core.Abstractions" />
