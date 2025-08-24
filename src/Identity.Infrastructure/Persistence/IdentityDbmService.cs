@@ -9,6 +9,7 @@ using InnoAndLogic.Persistence.Migrations;
 using InnoAndLogic.Shared;
 using InnoAndLogic.Shared.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Identity.Infrastructure.Persistence;
 
@@ -26,7 +27,7 @@ public class IdentityDbmService : DbmService, IIdentityDbmService {
     public async Task<Result<UserDTO>> GetUser(long userId, CancellationToken ct) {
         using IDisposable? userIdLogContext = _logger.BeginScope("UserId: {UserId}", userId);
 
-        var stmt = new GetUserStmt(userId);
+        var stmt = new GetUserStmt(SchemaName, userId);
         Result res = await Executor.ExecuteQueryWithRetry(stmt, ct);
         
         if (res.IsFailure) {
@@ -48,7 +49,7 @@ public class IdentityDbmService : DbmService, IIdentityDbmService {
         using IDisposable? statusLogContext = _logger.BeginScope("Status: {Status}", status);
         _logger.LogInformation("SetUserStatus");
 
-        var stmt = new SetUserStatusStmt(userId, status);
+        var stmt = new SetUserStatusStmt(SchemaName, userId, status);
         Result res = await Executor.ExecuteQueryWithRetry(stmt, ct);
         
         if (res.IsFailure) {
@@ -69,7 +70,7 @@ public class IdentityDbmService : DbmService, IIdentityDbmService {
         using IDisposable? rolesToRemoveLogContext = _logger.BeginScope("RolesToRemove: {RolesToRemove}", string.Join(",", rolesToRemove));
         _logger.LogInformation("UpdateUserRoles");
 
-        var stmt = new UpdateUserRolesStmt(userId, rolesToAdd, rolesToRemove);
+        var stmt = new UpdateUserRolesStmt(SchemaName, userId, rolesToAdd, rolesToRemove);
         Result res = await Executor.ExecuteQueryWithRetry(stmt, ct);
         
         if (res.IsFailure) {

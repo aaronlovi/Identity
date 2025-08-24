@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Identity.Host": {
+      "commandName": "Project"
+    },
+    "LocalEmulation": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "LocalEmulation"
+      }
+    }
+  }
+}

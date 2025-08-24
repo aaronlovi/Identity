@@ -8,15 +8,19 @@ using Npgsql;
 namespace Identity.Infrastructure.Persistence.Statements;
 
 internal sealed class GetUserStmt : PostgresQueryDbStmtBase {
-    private const string SQL = """
+    private const string SqlTemplate = """
 SELECT u.user_id, u.firebase_uid, string_agg(ur.role, ',') AS roles,
 us.status,
 u.created_at AS user_created_at, u.updated_at AS user_updated_at
-FROM users u LEFT JOIN user_roles ur ON u.user_id = ur.user_id
-LEFT JOIN user_status us ON u.user_id = us.user_id
+FROM ${schema}.users u LEFT JOIN ${schema}.user_roles ur ON u.user_id = ur.user_id
+LEFT JOIN ${schema}.user_status us ON u.user_id = us.user_id
 WHERE u.user_id = @user_id
 GROUP BY u.user_id, u.firebase_uid, us.status, u.created_at, u.updated_at
 """;
+
+    // Static SQL that gets set once on first constructor call
+    private static string? _sql;
+    private static readonly object _lock = new();
 
     private static int _userIdIndex = -1;
     private static int _firebaseUidIndex = -1;
@@ -29,8 +33,8 @@ GROUP BY u.user_id, u.firebase_uid, us.status, u.created_at, u.updated_at
 
     public UserDTO User { get; private set; }
 
-    public GetUserStmt(long userId)
-        : base(SQL, nameof(GetUserStmt)) {
+    public GetUserStmt(string schemaName, long userId)
+        : base(GetSql(schemaName), nameof(GetUserStmt)) {
         _userId = userId;
         User = UserDTO.Empty;
     }
@@ -69,5 +73,14 @@ GROUP BY u.user_id, u.firebase_uid, us.status, u.created_at, u.updated_at
 
         // Only one row is expected, so return false to stop further processing
         return false;
+    }
+
+    private static string GetSql(string schemaName) {
+        if (_sql is null) {
+            lock (_lock) {
+                _sql = SqlTemplate.Replace("${schema}", schemaName);
+            }
+        }
+        return _sql;
     }
 }

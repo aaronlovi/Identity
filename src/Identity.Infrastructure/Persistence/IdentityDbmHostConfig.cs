@@ -6,6 +6,7 @@ using InnoAndLogic.Persistence.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Identity.Infrastructure.Persistence;
 
@@ -29,15 +30,21 @@ public static class IdentityDbmHostConfig {
         IConfiguration configuration,
         string sectionName,
         IEnumerable<Assembly>? externalMigrationAssemblies = null) {
-        var databaseOptions = new DatabaseOptions();
-        IConfigurationSection section = configuration.GetSection(sectionName);
-        section.Bind(databaseOptions);
 
-        _ = services.AddSingleton(databaseOptions);
+        // Configure DatabaseOptions from configuration section
+        _ = services.Configure<DatabaseOptions>(options => {
+            IConfigurationSection section = configuration.GetSection(sectionName);
+            section.Bind(options);
+        });
+
+        // Get the options to determine the provider
+        var databaseOptions = new DatabaseOptions();
+        IConfigurationSection configSection = configuration.GetSection(sectionName);
+        configSection.Bind(databaseOptions);
 
         return databaseOptions.Provider switch {
             DatabaseProvider.InMemory => ConfigureInMemoryServices(services),
-            DatabaseProvider.Postgres => ConfigurePostgresServices(services, databaseOptions, externalMigrationAssemblies),
+            DatabaseProvider.Postgres => ConfigurePostgresServices(services, externalMigrationAssemblies),
             _ => throw new InvalidOperationException($"Unsupported database provider: {databaseOptions.Provider}")
         };
     }
@@ -51,18 +58,18 @@ public static class IdentityDbmHostConfig {
 
     private static IServiceCollection ConfigurePostgresServices(
         IServiceCollection services,
-        DatabaseOptions databaseOptions,
         IEnumerable<Assembly>? externalMigrationAssemblies) {
-        return services
-            .AddSingleton<PostgresExecutor>()
-            .AddSingleton(provider => new DbMigrations(
+        return services.
+            AddSingleton<PostgresExecutor>().
+            AddSingleton<DbMigrations>(provider => new DbMigrations(
                 provider.GetRequiredService<ILoggerFactory>(),
-                databaseOptions,
-                externalMigrationAssemblies))
-            .AddSingleton<IIdentityDbmService, IdentityDbmService>(provider => {
+                provider.GetRequiredService<IOptions<DatabaseOptions>>(),
+                externalMigrationAssemblies)).
+            AddSingleton<IIdentityDbmService, IdentityDbmService>(provider => {
                 ILoggerFactory loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                 PostgresExecutor executor = provider.GetRequiredService<PostgresExecutor>();
                 DbMigrations migrations = provider.GetRequiredService<DbMigrations>();
+                DatabaseOptions databaseOptions = provider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
 
                 return new IdentityDbmService(loggerFactory, executor, databaseOptions, migrations);
             });

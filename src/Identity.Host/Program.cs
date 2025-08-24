@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Identity.GrainInterfaces;
 using Identity.Grains;
 using Identity.Infrastructure;
+using Identity.Infrastructure.Firebase;
 using Identity.Infrastructure.Persistence;
 using InnoAndLogic.Persistence;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,8 @@ namespace Identity.Host;
 
 internal class Program {
     private static async Task Main(string[] args) {
+        string env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
         // Build the host with Orleans silo
         IHostBuilder hostBuilder = Hosting.Host.CreateDefaultBuilder(args)
             .UseOrleans((context, siloBuilder) => {
@@ -39,7 +42,7 @@ internal class Program {
             .ConfigureAppConfiguration((context, config) => {
                 _ = config.
                     AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).
-                    AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true).
+                    AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: true).
                     AddEnvironmentVariables();
             })
             .ConfigureServices((context, services) => {
@@ -50,7 +53,9 @@ internal class Program {
                     context.Configuration,
                     "DbmOptions",
                     migrationAssemblies);
-                
+
+                _ = services.ConfigureFirebase(context.Configuration, "FirebaseOptions");
+
                 // Configure AdminGrain options
                 _ = services.Configure<UserManagementGrainOptions>(context.Configuration.GetSection("AdminGrainOptions"));
             })

@@ -11,4 +11,8 @@ public class UserManagementGrainOptions {
     /// Default: 5 minutes.
     /// </summary>
     public TimeSpan CacheExpiry { get; set; } = TimeSpan.FromMinutes(5);
+
+    public string? FirebaseProjectId { get; set; }
+    public string? FirebaseServiceAccountKeyPath { get; set; }
+    public string? FirebaseServiceAccountJson { get; set; }
 }
